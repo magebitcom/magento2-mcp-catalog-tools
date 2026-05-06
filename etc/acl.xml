@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Backend::system">
+                    <resource id="Magebit_Mcp::mcp">
+                        <resource id="Magebit_Mcp::tools">
+
+                            <!-- Read tools -->
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_list"
+                                      title="Tool: List Products" sortOrder="100"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_get"
+                                      title="Tool: Get Product" sortOrder="101"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_category_list"
+                                      title="Tool: List Categories" sortOrder="110"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_category_get"
+                                      title="Tool: Get Category" sortOrder="111"/>
+
+                            <!-- Write tools -->
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_create"
+                                      title="Tool: Create Product" sortOrder="200"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_update"
+                                      title="Tool: Update Product" sortOrder="201"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_delete"
+                                      title="Tool: Delete Product" sortOrder="202"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_category_create"
+                                      title="Tool: Create Category" sortOrder="210"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_category_update"
+                                      title="Tool: Update Category" sortOrder="211"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_category_delete"
+                                      title="Tool: Delete Category" sortOrder="212"/>
+
+                        </resource>
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

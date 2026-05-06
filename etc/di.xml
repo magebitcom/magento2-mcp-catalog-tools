@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Register every tool with the base module's ToolRegistry. -->
+    <type name="Magebit\Mcp\Model\Tool\ToolRegistry">
+        <arguments>
+            <argument name="tools" xsi:type="array">
+                <!-- Read tools -->
+                <item name="catalog.product.list" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\ProductList
+                </item>
+                <item name="catalog.product.get" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\ProductGet
+                </item>
+                <item name="catalog.category.list" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryList
+                </item>
+                <item name="catalog.category.get" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryGet
+                </item>
+
+                <!-- Write tools -->
+                <item name="catalog.product.create" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\ProductCreate
+                </item>
+                <item name="catalog.product.update" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\ProductUpdate
+                </item>
+                <item name="catalog.product.delete" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\ProductDelete
+                </item>
+                <item name="catalog.category.create" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryCreate
+                </item>
+                <item name="catalog.category.update" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryUpdate
+                </item>
+                <item name="catalog.category.delete" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryDelete
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Product field resolvers (full set for `catalog.product.get`). -->
+    <type name="Magebit\McpCatalogTools\Tool\Catalog\Product\ProductGet">
+        <arguments>
+            <argument name="fieldResolvers" xsi:type="array">
+                <item name="identity" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\IdentityResolver
+                </item>
+                <item name="state" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\StateResolver
+                </item>
+                <item name="pricing" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\PricingResolver
+                </item>
+                <item name="tier_prices" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\TierPriceResolver
+                </item>
+                <item name="stock" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\StockResolver
+                </item>
+                <item name="categories" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\CategoriesResolver
+                </item>
+                <item name="websites" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\WebsitesResolver
+                </item>
+                <item name="media" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\MediaResolver
+                </item>
+                <item name="links" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\LinksResolver
+                </item>
+                <item name="type_options" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\TypeOptionsResolver
+                </item>
+                <item name="custom_attributes" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\CustomAttributesResolver
+                </item>
+                <item name="timestamps" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\TimestampsResolver
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Product field resolvers (leaner default for `catalog.product.list`). -->
+    <type name="Magebit\McpCatalogTools\Tool\Catalog\Product\ProductList">
+        <arguments>
+            <argument name="fieldResolvers" xsi:type="array">
+                <item name="identity" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\IdentityResolver
+                </item>
+                <item name="state" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\StateResolver
+                </item>
+                <item name="pricing" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\PricingResolver
+                </item>
+                <item name="stock" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\StockResolver
+                </item>
+                <item name="timestamps" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\TimestampsResolver
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Category field resolvers (full set for `catalog.category.get`).
+         `products` is included here but absent from the list-tool's default
+         set below — `catalog.category.list` carrying a product-id array per
+         row blows response budgets on broad tree dumps. Get-tool callers
+         that don't want the product-id array can pass
+         `exclude: ["products"]`. -->
+    <type name="Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryGet">
+        <arguments>
+            <argument name="fieldResolvers" xsi:type="array">
+                <item name="identity" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\IdentityResolver
+                </item>
+                <item name="state" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\StateResolver
+                </item>
+                <item name="tree" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\TreeResolver
+                </item>
+                <item name="content" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\ContentResolver
+                </item>
+                <item name="meta" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\MetaResolver
+                </item>
+                <item name="products" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\ProductsResolver
+                </item>
+                <item name="timestamps" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\TimestampsResolver
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Category field resolvers (leaner default for `catalog.category.list`). -->
+    <type name="Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryList">
+        <arguments>
+            <argument name="fieldResolvers" xsi:type="array">
+                <item name="identity" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\IdentityResolver
+                </item>
+                <item name="state" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\StateResolver
+                </item>
+                <item name="tree" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\TreeResolver
+                </item>
+                <item name="timestamps" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Category\TimestampsResolver
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>

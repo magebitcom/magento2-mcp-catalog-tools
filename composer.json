@@ -1,0 +1,19 @@
+{
+    "name": "magebitcom/magento2-mcp-catalog-tools",
+    "description": "Catalog-domain MCP tools for Magebit_Mcp (read + write over products and categories)",
+    "type": "magento2-module",
+    "license": "MIT",
+    "require": {
+        "php": "^8.1",
+        "magento/framework": "^103.0",
+        "magebitcom/magento2-mcp-module": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Magebit\\McpCatalogTools\\": ""
+        }
+    }
+}
