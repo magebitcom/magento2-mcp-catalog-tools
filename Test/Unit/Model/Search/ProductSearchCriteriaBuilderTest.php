@@ -188,20 +188,38 @@ class ProductSearchCriteriaBuilderTest extends TestCase
         $this->assertContains(['created_at', '2025-12-31', 'lteq'], $calls);
     }
 
-    public function testCategoryIdMapsToCategoryIdsField(): void
+    public function testCategoryIdScalarPassesThroughToNativeFilter(): void
     {
         $this->criteriaBuilder->expects($this->atLeastOnce())
             ->method('addFilter')
-            ->with('category_ids', $this->equalTo(3));
+            ->with('category_id', $this->equalTo('3'));
 
         $this->builder()->build(['filters' => ['category_id' => 3]]);
     }
 
-    public function testWebsiteIdMapsToWebsiteIdsField(): void
+    public function testCategoryIdArrayFlattensToCommaSeparatedInFilter(): void
     {
         $this->criteriaBuilder->expects($this->atLeastOnce())
             ->method('addFilter')
-            ->with('website_ids', $this->equalTo([1, 2]), 'in');
+            ->with('category_id', $this->equalTo('3,4'), 'in');
+
+        $this->builder()->build(['filters' => ['category_id' => [3, 4]]]);
+    }
+
+    public function testWebsiteIdScalarPassesThroughToNativeFilter(): void
+    {
+        $this->criteriaBuilder->expects($this->atLeastOnce())
+            ->method('addFilter')
+            ->with('website_id', $this->equalTo('1'));
+
+        $this->builder()->build(['filters' => ['website_id' => 1]]);
+    }
+
+    public function testWebsiteIdArrayFlattensToCommaSeparatedString(): void
+    {
+        $this->criteriaBuilder->expects($this->atLeastOnce())
+            ->method('addFilter')
+            ->with('website_id', $this->equalTo('1,2'), 'in');
 
         $this->builder()->build(['filters' => ['website_id' => [1, 2]]]);
     }

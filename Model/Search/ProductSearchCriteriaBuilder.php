@@ -30,8 +30,8 @@ use Magento\Framework\Exception\LocalizedException;
  *   - `attribute_set_id`        scalar or array ⇒ `IN`
  *   - `price_from` / `price_to` inclusive range
  *   - `qty_from` / `qty_to`     inclusive range (joined against stock index)
- *   - `category_id`             scalar or array ⇒ `IN` on `category_ids`
- *   - `website_id`              scalar or array ⇒ `IN` on `website_ids`
+ *   - `category_id`             scalar or array, via Magento's `ProductCategoryFilter`
+ *   - `website_id`              scalar or array, via Magento's `ProductWebsiteFilter`
  *   - `created_at_from` / `_to` inclusive range on `created_at`
  *   - `updated_at_from` / `_to` inclusive range on `updated_at`
  *
@@ -127,11 +127,8 @@ class ProductSearchCriteriaBuilder
                 return;
 
             case 'category_id':
-                $this->addEqualsOrIn('category_ids', $value);
-                return;
-
             case 'website_id':
-                $this->addEqualsOrIn('website_ids', $value);
+                $this->addJunctionFilter($key, $value);
                 return;
 
             case 'price_from':
@@ -248,6 +245,38 @@ class ProductSearchCriteriaBuilder
             }
         }
         throw new LocalizedException(__('Filter "%1" must be boolean.', $field));
+    }
+
+    /**
+     * Magento's ProductCategoryFilter / ProductWebsiteFilter expect a scalar
+     * or comma-separated string; arrays would TypeError on strpos().
+     *
+     * @param string $field
+     * @param mixed $value
+     * @return void
+     * @throws LocalizedException
+     */
+    private function addJunctionFilter(string $field, mixed $value): void
+    {
+        if (is_array($value)) {
+            $list = array_values(array_filter(
+                $value,
+                static fn($v): bool => is_scalar($v) && (string) $v !== ''
+            ));
+            if ($list === []) {
+                return;
+            }
+            $this->criteriaBuilder->addFilter(
+                $field,
+                implode(',', array_map(static fn($v): string => (string) $v, $list)),
+                'in'
+            );
+            return;
+        }
+        if (!is_scalar($value) || (string) $value === '') {
+            throw new LocalizedException(__('Filter "%1" requires a non-empty value.', $field));
+        }
+        $this->criteriaBuilder->addFilter($field, (string) $value);
     }
 
     /**
