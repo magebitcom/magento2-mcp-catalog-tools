@@ -12,11 +12,8 @@ use Magebit\McpCatalogTools\Api\ProductFieldResolverInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 
 /**
- * State slice — status, visibility.
- *
- * Both values are kept as raw ints (Magento catalog constants) rather than
- * remapped to strings, because the tool is a data API and not a UI — the AI
- * can read the Magento attribute definitions if it needs labels.
+ * State slice — status, visibility. Kept as raw ints (Magento catalog
+ * constants), not remapped to label strings: this is a data API, not a UI.
  */
 class StateResolver implements ProductFieldResolverInterface
 {

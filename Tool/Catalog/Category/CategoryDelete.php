@@ -21,11 +21,8 @@ use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * MCP write tool `catalog.category.delete`.
- *
- * Delete cascades to every descendant in the tree — Magento does not allow
- * partial deletes of a subtree. The AI client should prompt the operator
- * for confirmation, which {@see self::getConfirmationRequired()} signals.
+ * MCP write tool `catalog.category.delete`. Delete cascades to every
+ * descendant — Magento allows no partial subtree delete.
  */
 class CategoryDelete implements ToolInterface, UnderlyingAclAwareInterface
 {

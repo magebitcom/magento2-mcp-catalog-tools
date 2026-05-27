@@ -11,14 +11,9 @@ namespace Magebit\McpCatalogTools\Api;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 
 /**
- * Extension point for the `catalog.category.list` filter argument.
- *
- * Built-in filters live in
- * {@see \Magebit\McpCatalogTools\Model\Search\CategorySearchCriteriaBuilder};
- * 3rd parties register additional translators in the list tool's
- * `filterTranslators` DI array. Translators are consulted in DI order; the
- * first one whose `supports()` returns true claims the key. Unclaimed,
- * non-built-in keys fail with `INVALID_PARAMS`.
+ * Extension point for the `catalog.category.list` filter argument. Translators
+ * are consulted in DI order; the first whose `supports()` returns true claims
+ * the key. Unclaimed, non-built-in keys fail with `INVALID_PARAMS`.
  */
 interface CategoryFilterTranslatorInterface
 {

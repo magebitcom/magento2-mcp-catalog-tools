@@ -11,13 +11,9 @@ namespace Magebit\McpCatalogTools\Model;
 use Magento\Framework\Registry;
 
 /**
- * Run a callable with the `isSecureArea` registry flag set.
- *
- * Magento's {@see \Magento\Framework\Model\ActionValidator\RemoveAction} blocks
- * deletion of catalog Product / Category models unless `isSecureArea` is true
- * in {@see Registry}. `/mcp` runs in the `frontend` area, so write tools must
- * lift the guard around the repository delete call and restore the previous
- * value afterwards.
+ * Run a callable with the `isSecureArea` registry flag set, restoring it after.
+ * Magento's RemoveAction validator blocks catalog deletes unless the flag is
+ * true, and `/mcp` runs in the `frontend` area where it isn't set.
  */
 class SecureAreaScope
 {

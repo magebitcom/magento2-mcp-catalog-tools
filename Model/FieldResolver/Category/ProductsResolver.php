@@ -13,13 +13,9 @@ use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Catalog\Model\Category as CategoryModel;
 
 /**
- * Product-assignment slice — the list of product ids directly assigned to
- * this category.
- *
- * Wired into `catalog.category.get` by default (drop with
- * `exclude: ["products"]`) but not `catalog.category.list` — broad list
- * queries that return tens of thousands of SKUs per row blow the response
- * size budget.
+ * Product-assignment slice — product ids directly assigned to the category.
+ * Wired into `catalog.category.get` but not `.list`: broad list queries
+ * returning tens of thousands of SKUs per row blow the response size budget.
  */
 class ProductsResolver implements CategoryFieldResolverInterface
 {

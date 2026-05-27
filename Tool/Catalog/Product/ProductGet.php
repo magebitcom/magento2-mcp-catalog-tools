@@ -23,11 +23,6 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * MCP tool `catalog.product.get` — fetch one product by id or sku.
- *
- * The response shape is assembled from the DI-injected `$fieldResolvers`
- * array. 3rd-party modules add fields by registering their own
- * {@see ProductFieldResolverInterface} in etc/di.xml under this tool's
- * `fieldResolvers` argument.
  */
 class ProductGet implements ToolInterface
 {

@@ -17,30 +17,9 @@ use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * Translates the MCP `catalog.product.list` filter schema into a
- * {@see SearchCriteriaInterface} suitable for
- * `ProductRepositoryInterface::getList()`.
- *
- * Built-in keys (handled inline):
- *   - `sku`                     exact, array ⇒ `IN`, or `*glob*` ⇒ `like`
- *   - `name`                    `%like%` substring match
- *   - `status`                  coerced to 0/1 equality (enabled / disabled)
- *   - `visibility`              scalar or array ⇒ `IN`
- *   - `type_id`                 scalar or array ⇒ `IN`
- *   - `attribute_set_id`        scalar or array ⇒ `IN`
- *   - `price_from` / `price_to` inclusive range
- *   - `qty_from` / `qty_to`     inclusive range (joined against stock index)
- *   - `category_id`             scalar or array, via Magento's `ProductCategoryFilter`
- *   - `website_id`              scalar or array, via Magento's `ProductWebsiteFilter`
- *   - `created_at_from` / `_to` inclusive range on `created_at`
- *   - `updated_at_from` / `_to` inclusive range on `updated_at`
- *
- * Anything else is delegated to the DI-injected
- * {@see ProductFilterTranslatorInterface[]} array. Unhandled keys throw
- * {@see LocalizedException}.
- *
- * Paging clamped at {@see self::MAX_PAGE_SIZE} because LLM callers routinely
- * over-fetch; sort field restricted to {@see self::SORTABLE_FIELDS}.
+ * Translates the `catalog.product.list` filter schema into a SearchCriteria:
+ * most keys inline, category_id/website_id via Magento's native filters, the
+ * rest via the {@see ProductFilterTranslatorInterface[]} DI array or a throw.
  */
 class ProductSearchCriteriaBuilder
 {

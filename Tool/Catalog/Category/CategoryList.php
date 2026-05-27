@@ -25,10 +25,7 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * MCP tool `catalog.category.list` — filtered + paged list of categories.
- *
- * Uses {@see CategoryListInterface} (NOT CategoryRepository::getList — which
- * doesn't exist) to run the search. Each row is composed from the same
- * `CategoryFieldResolverInterface` array as `catalog.category.get`.
+ * Runs through {@see CategoryListInterface} (CategoryRepository has no getList).
  */
 class CategoryList implements ToolInterface
 {

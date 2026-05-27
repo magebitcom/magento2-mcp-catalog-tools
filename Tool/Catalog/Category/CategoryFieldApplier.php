@@ -13,14 +13,7 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Helper service shared by {@see CategoryCreate} and {@see CategoryUpdate}.
- *
- * Both tools accept the same set of optional write-through fields plus a
- * `custom_attributes` map. The logic lives here so the tools stay focused
- * on their top-level orchestration.
- *
- * Registered as a normal DI service — third parties can preference this
- * class to extend the accepted-field list, override the custom-attribute
- * scalar set, or change the validation rules.
+ * Preference this class to change the accepted-field list or validation rules.
  */
 class CategoryFieldApplier
 {
@@ -86,11 +79,9 @@ class CategoryFieldApplier
     }
 
     /**
-     * Coerce a JSON-RPC boolean field, accepting only real booleans and the
-     * canonical 0/1 / "0"/"1" forms. Permissive `(bool) $value` casts here
-     * would treat the string `"false"` as truthy — the JSON-RPC schema
-     * declares these as boolean, so anything stranger is a caller bug and
-     * should fail loudly.
+     * Coerce a boolean field, accepting only real booleans and canonical
+     * 0/1 / "0"/"1". A `(bool)` cast would treat the string "false" as truthy,
+     * so anything else fails loudly rather than silently.
      *
      * @param mixed $value
      * @param string $field
@@ -114,13 +105,9 @@ class CategoryFieldApplier
     }
 
     /**
-     * Attribute codes this applier already consumes through dedicated,
-     * validated handling (the typed setters above plus the
-     * {@see scalarCustomAttributes()} top-level scalars). Routing any of them
-     * through the untyped `custom_attributes` map would bypass that
-     * validation, so they are rejected there with a clear error.
-     *
-     * Override in a subclass if a custom field set changes what is reserved.
+     * Attribute codes already handled by validated typed setters; routing them
+     * through the untyped `custom_attributes` map would bypass that validation,
+     * so they are rejected there.
      *
      * @return array<int, string>
      */

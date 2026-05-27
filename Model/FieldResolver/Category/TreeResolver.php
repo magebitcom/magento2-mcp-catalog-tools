@@ -13,11 +13,8 @@ use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Catalog\Model\Category as CategoryModel;
 
 /**
- * Tree slice — parent_id, level, path, position, children_count.
- *
- * `path` is the canonical "1/2/3/42" representation Magento uses internally
- * for tree traversal; callers that want breadcrumbs should exclude this
- * resolver and query categories individually.
+ * Tree slice — parent_id, level, path, position, children_count. `path` is the
+ * canonical "1/2/3/42" representation Magento uses internally, not breadcrumbs.
  */
 class TreeResolver implements CategoryFieldResolverInterface
 {

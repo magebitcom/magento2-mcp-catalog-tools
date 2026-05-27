@@ -15,13 +15,6 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 
-/**
- * Shared id-or-sku lookup for catalog products and id-only lookup for categories.
- *
- * Products accept exactly one of `id` / `product_id` / `sku`.
- * Categories accept `id` / `category_id` plus optional `store_id` for
- * store-scoped attribute reads.
- */
 class EntityFinder
 {
     /**
@@ -90,13 +83,9 @@ class EntityFinder
     }
 
     /**
-     * Resolve the optional store context for category lookup.
-     *
-     * Returns null when the caller did not supply `store_id`; passes the raw
-     * int otherwise (0 is honoured as "admin scope"). A malformed `store_id`
-     * (non-numeric, negative, fractional) raises rather than silently
-     * coercing to admin scope — silent coercion would let a typo route a
-     * store-scoped read through admin and the caller would never know.
+     * Resolve the optional store context for category lookup. A malformed
+     * `store_id` raises rather than coercing to admin scope, so a typo can't
+     * silently route a store-scoped read through admin (0 is honoured as admin).
      *
      * @param array $args
      * @phpstan-param array<string, mixed> $args

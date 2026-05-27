@@ -15,11 +15,9 @@ use Magento\Catalog\Model\Product as ProductModel;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 
 /**
- * Category-assignment slice — the list of categories this product belongs to.
- *
- * Emits `category_ids` (flat int array) and `categories` ({id, name} records).
- * A category id that resolves in `category_ids` but is missing from
- * `categories` indicates a stale link to a deleted category.
+ * Category-assignment slice. Emits `category_ids` (flat int array) and
+ * `categories` ({id, name} records); an id present in the former but missing
+ * from the latter is a stale link to a deleted category.
  */
 class CategoriesResolver implements ProductFieldResolverInterface
 {

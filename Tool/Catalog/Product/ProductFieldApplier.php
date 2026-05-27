@@ -15,24 +15,14 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Helper service shared by {@see ProductCreate} and {@see ProductUpdate}.
- *
- * Both tools accept the same set of optional write-through fields plus a few
- * structured sub-payloads (custom attributes, website assignment, category
- * assignment). The logic lives here so the tools stay focused on their
- * top-level orchestration.
- *
- * Registered as a normal DI service — third parties can preference this
- * class to extend the accepted-field list, override the custom-attribute
- * scalar set, or change the validation rules.
+ * Preference this class to change the accepted-field list or validation rules.
  */
 class ProductFieldApplier
 {
     /**
-     * Apply every optional ProductInterface field present in `$args` to `$product`.
-     *
-     * Required fields (`sku`, `name`, `price`, `attribute_set_id`, `type_id`,
-     * `status`, `visibility`) are the caller's responsibility — this method is
-     * safe to call on either a brand-new or already-loaded product.
+     * Apply every optional ProductInterface field present in `$args`. Safe on
+     * either a brand-new or an already-loaded product; required fields are the
+     * caller's responsibility.
      *
      * @param ProductInterface $product
      * @param array $args
