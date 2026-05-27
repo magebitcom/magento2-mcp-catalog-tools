@@ -12,13 +12,6 @@ use Magebit\McpCatalogTools\Api\ProductFieldResolverInterface;
 use Magento\Catalog\Api\Data\ProductAttributeMediaGalleryEntryInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 
-/**
- * Media-gallery slice — every entry from `$product->getMediaGalleryEntries()`.
- *
- * Entries are returned in their stored order with `position`, `label`, `file`,
- * `disabled`, and `types` (the role tags: `image`, `small_image`,
- * `thumbnail`, `swatch_image`).
- */
 class MediaResolver implements ProductFieldResolverInterface
 {
     public const KEY = 'media';

@@ -13,11 +13,9 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\Api\AttributeInterface;
 
 /**
- * Custom-attributes slice — EAV attribute values keyed by attribute code.
- *
- * Attributes already surfaced by dedicated resolvers (price, special_price,
- * tax_class_id, status, visibility, description, weight, etc.) are filtered
- * out to avoid duplicating data in the response.
+ * Custom-attributes slice — EAV values keyed by attribute code. Attributes
+ * already surfaced by dedicated resolvers (price, status, weight, etc.) are
+ * filtered out to avoid duplicating data in the response.
  */
 class CustomAttributesResolver implements ProductFieldResolverInterface
 {

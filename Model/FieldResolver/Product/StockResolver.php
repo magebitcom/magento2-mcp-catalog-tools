@@ -14,13 +14,9 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 
 /**
- * Stock slice — qty, is_in_stock, manage_stock.
- *
- * Stock is not on `ProductInterface`; Magento keeps it in the
- * CatalogInventory module behind {@see StockRegistryInterface}. The resolver
- * asks the default stock (stock_id = 1) — multi-source inventory (MSI)
- * aggregation is out of scope for this v1 and can be layered on via a 3rd
- * party resolver.
+ * Stock slice — qty, is_in_stock, manage_stock. Stock is not on
+ * `ProductInterface`, so it is read from {@see StockRegistryInterface} default
+ * stock (stock_id = 1); MSI aggregation is left to a 3rd-party resolver.
  */
 class StockResolver implements ProductFieldResolverInterface
 {

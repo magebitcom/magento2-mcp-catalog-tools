@@ -13,14 +13,7 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * Helper service shared by {@see CategoryCreate} and {@see CategoryUpdate}.
- *
- * Both tools accept the same set of optional write-through fields plus a
- * `custom_attributes` map. The logic lives here so the tools stay focused
- * on their top-level orchestration.
- *
- * Registered as a normal DI service — third parties can preference this
- * class to extend the accepted-field list, override the custom-attribute
- * scalar set, or change the validation rules.
+ * Preference this class to change the accepted-field list or validation rules.
  */
 class CategoryFieldApplier
 {
@@ -59,10 +52,20 @@ class CategoryFieldApplier
         }
 
         if (array_key_exists('custom_attributes', $args) && is_array($args['custom_attributes'])) {
+            $reserved = $this->reservedCustomAttributeCodes();
             foreach ($args['custom_attributes'] as $code => $value) {
                 if (!is_string($code) || $code === '') {
                     throw new LocalizedException(
                         __('custom_attributes keys must be non-empty strings.')
+                    );
+                }
+                if (in_array($code, $reserved, true)) {
+                    throw new LocalizedException(
+                        __(
+                            '"%1" cannot be set through custom_attributes; use the dedicated '
+                            . 'top-level field, which validates the value.',
+                            $code
+                        )
                     );
                 }
                 if (!is_scalar($value) && $value !== null) {
@@ -76,11 +79,9 @@ class CategoryFieldApplier
     }
 
     /**
-     * Coerce a JSON-RPC boolean field, accepting only real booleans and the
-     * canonical 0/1 / "0"/"1" forms. Permissive `(bool) $value` casts here
-     * would treat the string `"false"` as truthy — the JSON-RPC schema
-     * declares these as boolean, so anything stranger is a caller bug and
-     * should fail loudly.
+     * Coerce a boolean field, accepting only real booleans and canonical
+     * 0/1 / "0"/"1". A `(bool)` cast would treat the string "false" as truthy,
+     * so anything else fails loudly rather than silently.
      *
      * @param mixed $value
      * @param string $field
@@ -100,6 +101,27 @@ class CategoryFieldApplier
         }
         throw new LocalizedException(
             __('"%1" must be a boolean (true/false).', $field)
+        );
+    }
+
+    /**
+     * Attribute codes already handled by validated typed setters; routing them
+     * through the untyped `custom_attributes` map would bypass that validation,
+     * so they are rejected there.
+     *
+     * @return array<int, string>
+     */
+    protected function reservedCustomAttributeCodes(): array
+    {
+        return array_merge(
+            [
+                'name',
+                'parent_id',
+                'is_active',
+                'include_in_menu',
+                'position',
+            ],
+            $this->scalarCustomAttributes()
         );
     }
 

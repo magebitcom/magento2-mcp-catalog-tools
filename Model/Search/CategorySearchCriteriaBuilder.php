@@ -17,23 +17,9 @@ use Magento\Framework\Api\SortOrderBuilder;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * Translates the MCP `catalog.category.list` filter schema into a
- * {@see SearchCriteriaInterface} suitable for
- * `CategoryListInterface::getList()`.
- *
- * Built-in keys (handled inline):
- *   - `name`             `%like%` substring match
- *   - `is_active`        coerced to 0/1 equality
- *   - `include_in_menu`  coerced to 0/1 equality
- *   - `parent_id`        scalar or array ⇒ `IN`
- *   - `level_from` / `_to`  inclusive range on `level`
- *
- * Anything else is delegated to the DI-injected
- * {@see CategoryFilterTranslatorInterface[]} array. Unhandled keys throw
- * {@see LocalizedException}.
- *
- * Default sort is `level ASC, position ASC` so shallow-tree results come first.
- * Paging clamped at {@see self::MAX_PAGE_SIZE}.
+ * Translates the `catalog.category.list` filter schema into a SearchCriteria:
+ * known keys inline, others via the {@see CategoryFilterTranslatorInterface[]}
+ * DI array or a throw; sort limited to SORTABLE_FIELDS, page size clamped.
  */
 class CategorySearchCriteriaBuilder
 {

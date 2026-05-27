@@ -22,11 +22,8 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * MCP write tool `catalog.product.delete`.
- *
- * Delete is non-reversible at the repository level — the AI client should
- * prompt the operator for confirmation, which {@see self::getConfirmationRequired()}
- * signals.
+ * MCP write tool `catalog.product.delete`. Non-reversible at the repository
+ * level; {@see self::getConfirmationRequired()} prompts the operator.
  */
 class ProductDelete implements ToolInterface, UnderlyingAclAwareInterface
 {

@@ -22,12 +22,8 @@ use Magento\Catalog\Api\Data\CategoryInterfaceFactory;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * MCP write tool `catalog.category.create`.
- *
- * Thin wrapper over {@see CategoryRepositoryInterface::save()}. Required
- * fields are `name` and `parent_id`. The caller is responsible for picking a
- * valid `parent_id` — 2 is the default root category of the default store
- * in a vanilla Magento install.
+ * MCP write tool `catalog.category.create`. Required fields are `name` and a
+ * valid `parent_id` (2 is the default root category in a vanilla install).
  */
 class CategoryCreate implements ToolInterface, UnderlyingAclAwareInterface
 {

@@ -23,13 +23,9 @@ use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
- * MCP write tool `catalog.category.update`.
- *
- * PATCH-style: load the category, apply only the fields that were provided,
- * save. Tree moves are performed through {@see CategoryManagementInterface::move}
- * (the same path the admin UI uses) — repository::save() alone does not
- * rebuild `path` / `level` / parent child counts on a `parent_id` change,
- * so a plain setParentId+save would leave the tree inconsistent.
+ * MCP write tool `catalog.category.update` (PATCH-style). Tree moves route
+ * through {@see CategoryManagementInterface::move} because save() alone leaves
+ * `path`/`level`/child counts stale on a `parent_id` change.
  */
 class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
 {

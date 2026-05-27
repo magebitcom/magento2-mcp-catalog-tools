@@ -16,13 +16,9 @@ use Magento\ConfigurableProduct\Api\Data\OptionInterface as ConfigurableOptionIn
 use Magento\ConfigurableProduct\Api\Data\OptionValueInterface;
 
 /**
- * Type-driven option slice for configurable and bundle products.
- *
- * Returns `null` for other types. Module dependence on
- * `Magento_ConfigurableProduct` / `Magento_Bundle` is declared in
- * `etc/module.xml` `<sequence>`; per-type branches only fire when those
- * modules are enabled (no `configurable`/`bundle` products can exist
- * otherwise), so the typed helpers are never autoloaded on minimal installs.
+ * Type-driven option slice for configurable and bundle products (null
+ * otherwise). Per-type branches only fire when products of that type exist,
+ * so the ConfigurableProduct/Bundle helpers never autoload on minimal installs.
  */
 class TypeOptionsResolver implements ProductFieldResolverInterface
 {

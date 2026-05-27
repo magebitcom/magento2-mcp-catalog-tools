@@ -25,10 +25,6 @@ use Magento\Framework\Exception\LocalizedException;
 
 /**
  * MCP tool `catalog.product.list` — filtered + paged list of catalog products.
- *
- * Each row is composed from the same `ProductFieldResolverInterface` array as
- * `catalog.product.get`, so 3rd-party resolvers added for detail view show up
- * here too.
  */
 class ProductList implements ToolInterface
 {
