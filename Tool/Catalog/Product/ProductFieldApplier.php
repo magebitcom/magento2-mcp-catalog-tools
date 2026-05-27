@@ -74,10 +74,20 @@ class ProductFieldApplier
         }
 
         if (array_key_exists('custom_attributes', $args) && is_array($args['custom_attributes'])) {
+            $reserved = $this->reservedCustomAttributeCodes();
             foreach ($args['custom_attributes'] as $code => $value) {
                 if (!is_string($code) || $code === '') {
                     throw new LocalizedException(
                         __('custom_attributes keys must be non-empty strings.')
+                    );
+                }
+                if (in_array($code, $reserved, true)) {
+                    throw new LocalizedException(
+                        __(
+                            '"%1" cannot be set through custom_attributes; use the dedicated '
+                            . 'top-level field, which validates the value.',
+                            $code
+                        )
                     );
                 }
                 if (!is_scalar($value) && $value !== null) {
@@ -118,15 +128,6 @@ class ProductFieldApplier
 
     /**
      * Apply `category_ids` to the product when present in `$args`.
-     *
-     * `category_ids` is not on `ProductInterface`; it lives on the concrete
-     * `Magento\Catalog\Model\Product` (preferred path) and on any
-     * `DataObject` descendant via `setData()` (fallback for custom
-     * implementations). If the product is neither — i.e. someone has
-     * preferenced `ProductInterfaceFactory` to a value-object that the
-     * catalog repository ultimately won't honour — fail loudly so the
-     * caller sees the broken assignment instead of silently losing it.
-     *
      * @param ProductInterface $product
      * @param array $args
      * @phpstan-param array<string, mixed> $args
@@ -164,6 +165,34 @@ class ProductFieldApplier
                 get_class($product)
             )
         );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function reservedCustomAttributeCodes(): array
+    {
+        return [
+            // Typed setters / structured sub-payloads.
+            ProductInterface::SKU,
+            ProductInterface::NAME,
+            ProductInterface::PRICE,
+            ProductInterface::WEIGHT,
+            ProductInterface::STATUS,
+            ProductInterface::VISIBILITY,
+            ProductInterface::ATTRIBUTE_SET_ID,
+            ProductInterface::TYPE_ID,
+            'website_ids',
+            'category_ids',
+            // Scalar fields exposed (and validated) as top-level schema props.
+            'url_key',
+            'tax_class_id',
+            'description',
+            'short_description',
+            'meta_title',
+            'meta_keywords',
+            'meta_description',
+        ];
     }
 
     /**

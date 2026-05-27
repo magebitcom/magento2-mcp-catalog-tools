@@ -59,10 +59,20 @@ class CategoryFieldApplier
         }
 
         if (array_key_exists('custom_attributes', $args) && is_array($args['custom_attributes'])) {
+            $reserved = $this->reservedCustomAttributeCodes();
             foreach ($args['custom_attributes'] as $code => $value) {
                 if (!is_string($code) || $code === '') {
                     throw new LocalizedException(
                         __('custom_attributes keys must be non-empty strings.')
+                    );
+                }
+                if (in_array($code, $reserved, true)) {
+                    throw new LocalizedException(
+                        __(
+                            '"%1" cannot be set through custom_attributes; use the dedicated '
+                            . 'top-level field, which validates the value.',
+                            $code
+                        )
                     );
                 }
                 if (!is_scalar($value) && $value !== null) {
@@ -100,6 +110,31 @@ class CategoryFieldApplier
         }
         throw new LocalizedException(
             __('"%1" must be a boolean (true/false).', $field)
+        );
+    }
+
+    /**
+     * Attribute codes this applier already consumes through dedicated,
+     * validated handling (the typed setters above plus the
+     * {@see scalarCustomAttributes()} top-level scalars). Routing any of them
+     * through the untyped `custom_attributes` map would bypass that
+     * validation, so they are rejected there with a clear error.
+     *
+     * Override in a subclass if a custom field set changes what is reserved.
+     *
+     * @return array<int, string>
+     */
+    protected function reservedCustomAttributeCodes(): array
+    {
+        return array_merge(
+            [
+                'name',
+                'parent_id',
+                'is_active',
+                'include_in_menu',
+                'position',
+            ],
+            $this->scalarCustomAttributes()
         );
     }
 

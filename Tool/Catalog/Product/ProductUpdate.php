@@ -70,7 +70,9 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
             . 'with either `id` or `sku`. Only fields you provide are '
             . 'touched; omit `website_ids` / `category_ids` to keep existing '
             . 'assignments. Use `new_sku` to rename — URLs using the old SKU '
-            . 'will 404.';
+            . 'will 404. A product\'s `type_id` and `attribute_set_id` are '
+            . 'fixed at creation and cannot be changed here, mirroring the '
+            . 'admin UI.';
     }
 
     /**
@@ -87,8 +89,6 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
             ->string('new_sku', fn (StringBuilder $s) => $s->minLength(1))
             ->string('name', fn (StringBuilder $s) => $s->minLength(1))
             ->number('price', fn (NumberBuilder $n) => $n)
-            ->integer('attribute_set_id', fn (IntegerBuilder $i) => $i->minimum(1))
-            ->string('type_id', fn (StringBuilder $s) => $s->minLength(1))
             ->integer('status', fn (IntegerBuilder $i) => $i->enum([1, 2]))
             ->integer('visibility', fn (IntegerBuilder $i) => $i->enum([1, 2, 3, 4]))
             ->number('weight', fn (NumberBuilder $n) => $n)
@@ -157,7 +157,12 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
         } else {
             unset($patch['sku']);
         }
-        unset($patch['id']);
+        // `type_id` / `attribute_set_id` are immutable post-create (the admin
+        // UI renders them read-only); swapping them in place orphans EAV /
+        // type-specific rows. Strip them defensively even though they are no
+        // longer in the input schema, so a future schema change can't
+        // silently re-open the mutation.
+        unset($patch['id'], $patch['type_id'], $patch['attribute_set_id']);
 
         $this->fieldApplier->applyOptional($product, $patch);
         $this->fieldApplier->applyWebsites($product, $patch);
