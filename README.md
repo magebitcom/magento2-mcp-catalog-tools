@@ -33,8 +33,8 @@ bin/magento cache:flush
 
 | Tool | What it does |
 |---|---|
-| `catalog.product.list` | Paginated product search; filter by sku (exact / `*glob*` / array), name substring, status, visibility, type_id, attribute_set_id, price range, qty range, category_id, website_id, created_at range, updated_at range. |
-| `catalog.product.get` | Single product by numeric id or SKU. Default response includes identity, state, pricing, tier prices, stock, categories (ids + names), websites, media gallery, links, configurable / bundle option metadata, configurable child variants (`variants` — sku, name, price, special_price, status per child), custom attributes, and timestamps; narrow with `fields` / `exclude`. |
+| `catalog.product.list` | Paginated product search; filter by sku (exact / `*glob*` / array), name substring, status, visibility, type_id, attribute_set_id, price range, qty range, category_id, website_id, created_at range, updated_at range, `has_special_price` (boolean; presence-only, ignores the special-price date window). |
+| `catalog.product.get` | Single product by numeric id or SKU. Default response includes identity, state, pricing, tier prices, stock, categories (ids + names), websites, media gallery, links, configurable / bundle option metadata, configurable child variants (`variants` — id, sku, name, price, special_price, status per child), custom attributes, and timestamps; narrow with `fields` / `exclude`. |
 
 ### Categories (read)
 
@@ -67,6 +67,32 @@ Every write tool also implements `Magebit\Mcp\Api\UnderlyingAclAwareInterface`
 with `Magento_Catalog::products` / `Magento_Catalog::categories` as the
 underlying Magento admin resource, so they block calls from admins who
 wouldn't be allowed to perform the same action in the admin UI.
+
+## Upgrade notes
+
+- **Global-scope writes by default.** `catalog.product.create` /
+  `catalog.product.update` and `catalog.category.create` /
+  `catalog.category.update` now save attribute values at global/default
+  scope, matching REST `/all/V1/products`. Previously, calling these tools
+  from the frontend area silently wrote store-view override rows instead of
+  updating the default value. `catalog.product.update` gained an optional
+  `store_code` argument (a store view code, or `"all"`/omitted for global)
+  for intentional store-view overrides; `catalog.category.update` keeps its
+  existing integer `store_id` argument for the same purpose (categories are
+  always created at global scope — there is no store-scoped
+  `catalog.category.create`). Override rows created by earlier versions of
+  these tools are not repaired automatically — reapply the desired value at
+  global scope (or the correct store view) if you need to clean one up.
+- **`catalog.category.get` reads true admin scope by default.** Without a
+  `store_id`, the tool now reads at admin/default scope as documented. One
+  consequence: the `products.product_ids` slice always lists every product
+  assigned to the category, not a store-view-filtered subset — pass
+  `exclude: ["products"]` if you don't need it.
+- **`catalog.product.list` has a new `has_special_price` filter** — boolean,
+  presence-only (it does not evaluate `special_from_date` /
+  `special_to_date`).
+- **`catalog.product.get` has a new `variants` slice** for configurable
+  products: id, sku, name, price, special_price, and status for each child.
 
 ## Extending
 
