@@ -80,10 +80,16 @@ class CategoryList implements ToolInterface
     {
         return Schema::object()
             ->with(Filters::describing(
-                'Filter clauses. Built-in keys: name '
-                . '(substring), is_active (bool), include_in_menu '
-                . '(bool), parent_id (scalar | array), level_from, '
-                . 'level_to.'
+                'Filter clauses. Scalar or array values (array ⇒ IN); '
+                . 'level_from/level_to bound the category tree depth.',
+                [
+                    'name' => ['type' => 'string', 'description' => 'Substring match on category name.'],
+                    'is_active' => ['type' => 'boolean', 'description' => 'Active (true) or disabled (false).'],
+                    'include_in_menu' => ['type' => 'boolean', 'description' => 'Shown in navigation menu.'],
+                    'parent_id' => ['type' => ['integer', 'array'], 'description' => 'Parent category id(s).'],
+                    'level_from' => ['type' => 'integer', 'description' => 'Minimum tree level (inclusive).'],
+                    'level_to' => ['type' => 'integer', 'description' => 'Maximum tree level (inclusive).'],
+                ]
             ))
             ->with(Sort::fields(CategorySearchCriteriaBuilder::SORTABLE_FIELDS, 'level', 'asc'))
             ->with(Pagination::maxPageSize(CategorySearchCriteriaBuilder::MAX_PAGE_SIZE))
