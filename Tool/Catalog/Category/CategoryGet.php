@@ -61,8 +61,9 @@ class CategoryGet implements ToolInterface
      */
     public function getDescription(): string
     {
-        return 'Fetch a single catalog category by numeric id. The response '
-            . 'is composed from registered field resolvers — use `fields` to '
+        return 'Fetch a single catalog category by numeric `id` (or its '
+            . 'alias `category_id`). The response is composed from '
+            . 'registered field resolvers — use `fields` to '
             . 'narrow (e.g. `fields: ["identity", "tree"]`) or `exclude` to '
             . 'drop slices. Note: `products` returns every product id '
             . 'assigned to the category, which may be sizeable for broad '
@@ -77,8 +78,10 @@ class CategoryGet implements ToolInterface
         return Schema::object()
             ->integer('id', fn (IntegerBuilder $i) => $i
                 ->minimum(1)
-                ->description('Numeric catalog_category_entity.entity_id.')
-                ->required())
+                ->description('Numeric catalog_category_entity.entity_id.'))
+            ->integer('category_id', fn (IntegerBuilder $i) => $i
+                ->minimum(1)
+                ->description('Alias of `id`.'))
             ->integer('store_id', fn (IntegerBuilder $i) => $i
                 ->minimum(0)
                 ->description('Store scope for store-scoped attributes. '
