@@ -23,6 +23,9 @@ use PHPUnit\Framework\TestCase;
 
 class CategoryUpdateTest extends TestCase
 {
+    private const PARENT_BEFORE_MOVE = 2;
+    private const PARENT_AFTER_MOVE = 7;
+
     /** @var CategoryRepositoryInterface&MockObject */
     private CategoryRepositoryInterface $categoryRepository;
 
@@ -37,12 +40,32 @@ class CategoryUpdateTest extends TestCase
     /** @var array<int, string> */
     private array $calls = [];
 
+    /**
+     * Stand-in for `CategoryRepository::$instances`, keyed the way the vendor
+     * repository keys it: `$storeId ?? 'all'`.
+     *
+     * @var array<int|string, CategoryInterface&MockObject>
+     */
+    private array $repositoryCache = [];
+
+    private bool $moved = false;
+
+    private ?int $savedParentId = null;
+
     protected function setUp(): void
     {
         $this->calls = [];
+        $this->repositoryCache = [];
+        $this->moved = false;
+        $this->savedParentId = null;
+
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $this->categoryManagement = $this->createMock(CategoryManagementInterface::class);
         $this->storeManager = $this->createMock(StoreManagerInterface::class);
+
+        $this->emulateRepositoryCache();
+        $this->recordMoves();
+        $this->recordSaves();
 
         // `/mcp` resolves a frontend store view — store 1 stands in for it.
         $currentStore = $this->createMock(StoreInterface::class);
@@ -77,83 +100,134 @@ class CategoryUpdateTest extends TestCase
 
     public function testDefaultsToGlobalScopeForLoadAndSave(): void
     {
-        $category = $this->categoryMock();
-
-        $this->categoryRepository->expects($this->once())
-            ->method('get')
-            ->with(5, $this->identicalTo(0))
-            ->willReturnCallback(function () use ($category) {
-                $this->calls[] = 'get';
-                return $category;
-            });
-        $this->categoryRepository->expects($this->once())
-            ->method('save')
-            ->with($category)
-            ->willReturnCallback(function (CategoryInterface $saved) {
-                $this->calls[] = 'save';
-                return $saved;
-            });
-
         $this->tool->execute(['id' => 5, 'meta_title' => 'Global title']);
 
-        $this->assertSame(['switch:0', 'get', 'save', 'switch:1'], $this->calls);
+        $this->assertSame(['switch:0', 'get:0', 'save', 'switch:1'], $this->calls);
     }
 
     public function testExplicitStoreIdKeepsThatScope(): void
     {
-        $category = $this->categoryMock();
-
-        $this->categoryRepository->expects($this->once())
-            ->method('get')
-            ->with(5, $this->identicalTo(3))
-            ->willReturnCallback(function () use ($category) {
-                $this->calls[] = 'get';
-                return $category;
-            });
-        $this->categoryRepository->expects($this->once())
-            ->method('save')
-            ->willReturnCallback(function (CategoryInterface $saved) {
-                $this->calls[] = 'save';
-                return $saved;
-            });
-
         $this->tool->execute(['id' => 5, 'store_id' => 3, 'meta_title' => 'Store title']);
 
-        $this->assertSame(['switch:3', 'get', 'save', 'switch:1'], $this->calls);
+        $this->assertSame(['switch:3', 'get:3', 'save', 'switch:1'], $this->calls);
     }
 
-    public function testTreeMoveReloadsAtTheResolvedScope(): void
+    /**
+     * A move mutates only the unscoped (`'all'`) repository instance, so the
+     * scoped instance must be loaded *after* the move — a scoped load taken
+     * before it is a cache hit carrying pre-move tree columns, and saving it
+     * writes them back, reverting the move.
+     *
+     * @return void
+     */
+    public function testMoveThenSaveDoesNotWriteBackPreMoveTreeColumns(): void
     {
-        $category = $this->categoryMock();
+        $result = $this->tool->execute(['id' => 5, 'parent_id' => self::PARENT_AFTER_MOVE]);
 
-        $this->categoryRepository->expects($this->exactly(2))
-            ->method('get')
-            ->with(5, $this->identicalTo(0))
-            ->willReturn($category);
-        $this->categoryManagement->expects($this->once())
-            ->method('move')
-            ->with(5, 7, null)
-            ->willReturn(true);
-        $this->categoryRepository->expects($this->once())
-            ->method('save')
-            ->willReturn($category);
-
-        $result = $this->tool->execute(['id' => 5, 'parent_id' => 7]);
+        $this->assertSame(
+            self::PARENT_AFTER_MOVE,
+            $this->savedParentId,
+            'save() received a pre-move category — the move would be reverted.'
+        );
+        $this->assertSame(
+            ['switch:0', 'get:all', 'move', 'get:0', 'save', 'switch:1'],
+            $this->calls
+        );
 
         $changed = $result->getAuditSummary()['fields_changed'];
         $this->assertIsArray($changed);
         $this->assertContains('parent_id', $changed);
     }
 
+    public function testMoveAtAnExplicitStoreScopeIsAlsoFresh(): void
+    {
+        $this->tool->execute([
+            'id' => 5,
+            'store_id' => 3,
+            'parent_id' => self::PARENT_AFTER_MOVE,
+        ]);
+
+        $this->assertSame(
+            ['switch:3', 'get:all', 'move', 'get:3', 'save', 'switch:1'],
+            $this->calls
+        );
+        $this->assertSame(self::PARENT_AFTER_MOVE, $this->savedParentId);
+    }
+
+    public function testParentIdMatchingTheCurrentParentDoesNotMove(): void
+    {
+        $this->categoryManagement->expects($this->never())->method('move');
+
+        $result = $this->tool->execute(['id' => 5, 'parent_id' => self::PARENT_BEFORE_MOVE]);
+
+        $this->assertSame(['switch:0', 'get:all', 'get:0', 'save', 'switch:1'], $this->calls);
+
+        $changed = $result->getAuditSummary()['fields_changed'];
+        $this->assertIsArray($changed);
+        $this->assertNotContains('parent_id', $changed);
+    }
+
     /**
+     * Emulate the vendor repository's per-store instance cache: repeated `get()`
+     * on one key returns the same object, while a first load on a cold key
+     * reflects current DB state (post-move once the move has run).
+     *
+     * @return void
+     */
+    private function emulateRepositoryCache(): void
+    {
+        $this->categoryRepository->method('get')
+            ->willReturnCallback(function ($categoryId, $storeId = null): CategoryInterface {
+                $key = $storeId ?? 'all';
+                $this->calls[] = 'get:' . (string) $key;
+                if (!isset($this->repositoryCache[$key])) {
+                    $this->repositoryCache[$key] = $this->categoryMock(
+                        $this->moved ? self::PARENT_AFTER_MOVE : self::PARENT_BEFORE_MOVE
+                    );
+                }
+
+                return $this->repositoryCache[$key];
+            });
+    }
+
+    /**
+     * @return void
+     */
+    private function recordMoves(): void
+    {
+        $this->categoryManagement->method('move')
+            ->willReturnCallback(function (): bool {
+                $this->calls[] = 'move';
+                $this->moved = true;
+                return true;
+            });
+    }
+
+    /**
+     * @return void
+     */
+    private function recordSaves(): void
+    {
+        $this->categoryRepository->method('save')
+            ->willReturnCallback(function (CategoryInterface $category): CategoryInterface {
+                $this->calls[] = 'save';
+                $this->savedParentId = $category->getParentId() !== null
+                    ? (int) $category->getParentId()
+                    : null;
+                return $category;
+            });
+    }
+
+    /**
+     * @param int $parentId
      * @return CategoryInterface&MockObject
      */
-    private function categoryMock(): CategoryInterface
+    private function categoryMock(int $parentId): CategoryInterface
     {
         $category = $this->createMock(CategoryInterface::class);
         $category->method('getId')->willReturn(5);
         $category->method('getName')->willReturn('Shoes');
-        $category->method('getParentId')->willReturn(2);
+        $category->method('getParentId')->willReturn($parentId);
         $category->method('getLevel')->willReturn(2);
 
         return $category;

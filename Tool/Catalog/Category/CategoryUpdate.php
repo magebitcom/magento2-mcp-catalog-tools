@@ -182,12 +182,6 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
      */
     private function applyUpdate(array $arguments, int $storeId): ToolResultInterface
     {
-        $category = $this->entityFinder->categoryFrom($arguments, $storeId);
-        $categoryId = (int) $category->getId();
-        $currentParentId = $category->getParentId() !== null
-            ? (int) $category->getParentId()
-            : null;
-
         $patch = $arguments;
         unset($patch['id'], $patch['store_id']);
 
@@ -203,11 +197,14 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         }
         unset($patch['parent_id'], $patch['after_id']);
 
-        if ($newParentId !== null && $newParentId !== $currentParentId) {
-            $this->categoryManagement->move($categoryId, $newParentId, $afterId);
-            // Reload so the field applier and response see the rebuilt path/level.
-            $category = $this->entityFinder->categoryFrom(['id' => $categoryId], $storeId);
-        }
+        $moved = $newParentId !== null && $this->move($arguments, $newParentId, $afterId);
+
+        // Load at the write scope only now. `CategoryRepository` caches one
+        // instance per store id and `save()` re-gets that cached instance, so a
+        // load taken before the move would hand `save()` pre-move
+        // path/level/position/parent_id — all static columns, written back
+        // unconditionally — silently reverting the move.
+        $category = $this->entityFinder->categoryFrom($arguments, $storeId);
 
         $this->fieldApplier->applyOptional($category, $patch);
 
@@ -227,7 +224,7 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         }
 
         $changed = array_keys($patch);
-        if ($newParentId !== null && $newParentId !== $currentParentId) {
+        if ($moved) {
             $changed[] = 'parent_id';
         }
 
@@ -239,5 +236,37 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
                 'fields_changed' => $changed,
             ]
         );
+    }
+
+    /**
+     * Move the category when the requested parent differs from the current one.
+     * The parent is read from the *unscoped* instance — the same repository
+     * cache entry `CategoryManagement::move()` loads and mutates — so the
+     * scoped cache entry stays cold until the tree has been rebuilt.
+     *
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @param int $newParentId
+     * @param int|null $afterId
+     * @return bool Whether a move was performed.
+     * @throws LocalizedException
+     */
+    private function move(array $arguments, int $newParentId, ?int $afterId): bool
+    {
+        $unscopedArgs = $arguments;
+        unset($unscopedArgs['store_id']);
+
+        $category = $this->entityFinder->categoryFrom($unscopedArgs);
+        $currentParentId = $category->getParentId() !== null
+            ? (int) $category->getParentId()
+            : null;
+
+        if ($newParentId === $currentParentId) {
+            return false;
+        }
+
+        $this->categoryManagement->move((int) $category->getId(), $newParentId, $afterId);
+
+        return true;
     }
 }
