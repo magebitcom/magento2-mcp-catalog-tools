@@ -8,9 +8,13 @@ declare(strict_types=1);
 
 namespace Magebit\McpCatalogTools\Test\Unit\Tool\Catalog\Category;
 
+use Magebit\Mcp\Api\ToolResultInterface;
 use Magebit\Mcp\Model\Util\ResolverPipeline;
 use Magebit\McpCatalogTools\Model\EntityFinder;
 use Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryGet;
+use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Magento\Catalog\Api\Data\CategoryInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use PHPUnit\Framework\TestCase;
 
 class CategoryGetTest extends TestCase
@@ -48,5 +52,31 @@ class CategoryGetTest extends TestCase
         $description = $this->tool->getDescription();
         $this->assertStringContainsString('id', $description);
         $this->assertStringContainsString('category_id', $description);
+    }
+
+    public function testExecuteResolvesCategoryFromCategoryIdAlias(): void
+    {
+        $category = $this->createMock(CategoryInterface::class);
+        $category->method('getId')->willReturn(33);
+        $category->method('getName')->willReturn('Alias Category');
+        $category->method('getLevel')->willReturn(2);
+
+        $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
+        $categoryRepository->expects($this->once())
+            ->method('get')
+            ->with(33)
+            ->willReturn($category);
+
+        $entityFinder = new EntityFinder(
+            $this->createMock(ProductRepositoryInterface::class),
+            $categoryRepository
+        );
+
+        $tool = new CategoryGet($entityFinder, new ResolverPipeline(), []);
+
+        $result = $tool->execute(['category_id' => 33]);
+
+        $this->assertInstanceOf(ToolResultInterface::class, $result);
+        $this->assertSame(33, $result->getAuditSummary()['category_id']);
     }
 }
