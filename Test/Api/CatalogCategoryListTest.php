@@ -32,7 +32,9 @@ class CatalogCategoryListTest extends McpTestCase
         self::assertArrayHasKey('total_count', $payload);
         self::assertGreaterThanOrEqual(1, $payload['total_count']);
 
-        $parentIds = array_column(array_column($payload['items'], 'tree'), 'parent_id');
+        $items = $payload['items'] ?? null;
+        self::assertIsArray($items);
+        $parentIds = array_column(array_column($items, 'tree'), 'parent_id');
         self::assertNotEmpty($parentIds);
         foreach ($parentIds as $parentId) {
             self::assertSame(2, $parentId, 'parent_id filter should not leak into other branches.');
@@ -64,7 +66,9 @@ class CatalogCategoryListTest extends McpTestCase
     {
         $body = $response['body'];
         self::assertIsArray($body);
-        $content = $body['result']['content'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $content = $result['content'] ?? null;
         self::assertIsArray($content);
         $decoded = json_decode((string) ($content[0]['text'] ?? ''), true);
         self::assertIsArray($decoded);

@@ -46,7 +46,9 @@ class CatalogToolsDiscoveryTest extends McpTestCase
 
         $body = $response['body'];
         self::assertIsArray($body);
-        $tools = $body['result']['tools'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $tools = $result['tools'] ?? null;
         self::assertIsArray($tools);
         $names = array_column($tools, 'name');
 
@@ -69,7 +71,9 @@ class CatalogToolsDiscoveryTest extends McpTestCase
 
         $body = $response['body'];
         self::assertIsArray($body);
-        $tools = $body['result']['tools'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $tools = $result['tools'] ?? null;
         self::assertIsArray($tools);
         $names = array_column($tools, 'name');
 

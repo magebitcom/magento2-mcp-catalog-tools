@@ -77,7 +77,9 @@ class CatalogProductListTest extends McpTestCase
     {
         $body = $response['body'];
         self::assertIsArray($body);
-        $content = $body['result']['content'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $content = $result['content'] ?? null;
         self::assertIsArray($content);
         self::assertNotEmpty($content);
         $first = $content[0];
