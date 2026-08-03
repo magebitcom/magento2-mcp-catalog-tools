@@ -41,7 +41,7 @@ bin/magento cache:flush
 | Tool | What it does |
 |---|---|
 | `catalog.category.list` | Paginated category search; filter by name substring, is_active, include_in_menu, parent_id, level range. |
-| `catalog.category.get` | Single category by numeric id; tree metadata, content, meta, state, plus the product ids assigned to the category (drop with `exclude: ["products"]`). |
+| `catalog.category.get` | Single category by numeric id; tree metadata, content, meta, state, plus the product ids assigned to the category (drop with `exclude: ["products"]`). Reads at global/default scope unless `store_id` is given. |
 
 ### Products (write)
 
@@ -59,8 +59,8 @@ confirmation so MCP clients prompt before firing.
 
 | Tool | Confirm? | What it does |
 |---|---|---|
-| `catalog.category.create` | yes | Create a category under an existing parent. |
-| `catalog.category.update` | yes | PATCH-style update by id. Changing `parent_id` triggers a tree move via `CategoryManagementInterface::move()` (path / level rebuild); use `after_id` to control sibling ordering at the destination. |
+| `catalog.category.create` | yes | Create a category under an existing parent. Values are saved at global/default scope. |
+| `catalog.category.update` | yes | PATCH-style update by id. Changing `parent_id` triggers a tree move via `CategoryManagementInterface::move()` (path / level rebuild); use `after_id` to control sibling ordering at the destination. Saves at global/default scope; pass `store_id` for a deliberate store-view override. |
 | `catalog.category.delete` | yes | Permanently delete a category and its descendants. Cascades. |
 
 Every write tool also implements `Magebit\Mcp\Api\UnderlyingAclAwareInterface`

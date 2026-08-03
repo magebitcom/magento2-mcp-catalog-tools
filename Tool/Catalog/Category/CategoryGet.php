@@ -19,6 +19,7 @@ use Magebit\Mcp\Model\Util\ResolverPipeline;
 use Magebit\McpCatalogTools\Api\CategoryFieldResolverInterface;
 use Magebit\McpCatalogTools\Model\EntityFinder;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\Store;
 
 /**
  * MCP tool `catalog.category.get` — fetch one category by id.
@@ -124,7 +125,7 @@ class CategoryGet implements ToolInterface
      */
     public function execute(array $arguments): ToolResultInterface
     {
-        $category = $this->entityFinder->categoryFrom($arguments);
+        $category = $this->entityFinder->categoryFrom($arguments, Store::DEFAULT_STORE_ID);
 
         $response = [];
         foreach ($this->pipeline->plan($this->fieldResolvers, $arguments) as $resolver) {

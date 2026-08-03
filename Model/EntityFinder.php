@@ -59,21 +59,24 @@ class EntityFinder
     }
 
     /**
-     * Resolve a category from `id`/`category_id` tool args.
+     * Resolve a category from `id`/`category_id` tool args. `$fallbackStoreId`
+     * applies when the args carry no `store_id`; null keeps the repository's
+     * own scope resolution (current store view).
      *
      * @param array $args
      * @phpstan-param array<string, mixed> $args
+     * @param int|null $fallbackStoreId
      * @return CategoryInterface
      * @throws LocalizedException
      */
-    public function categoryFrom(array $args): CategoryInterface
+    public function categoryFrom(array $args, ?int $fallbackStoreId = null): CategoryInterface
     {
         $id = $this->pickNumeric($args, ['id', 'category_id']);
         if ($id === null) {
             throw new LocalizedException(__('One of "id" or "category_id" is required.'));
         }
 
-        $storeId = $this->resolveStoreId($args);
+        $storeId = $this->resolveStoreId($args) ?? $fallbackStoreId;
 
         try {
             return $storeId !== null
@@ -82,6 +85,20 @@ class EntityFinder
         } catch (NoSuchEntityException $e) {
             throw new LocalizedException(__('Category %1 not found.', $id), $e);
         }
+    }
+
+    /**
+     * The effective store scope for a call: explicit `store_id` wins, else `$default`.
+     *
+     * @param array $args
+     * @phpstan-param array<string, mixed> $args
+     * @param int $default
+     * @return int
+     * @throws LocalizedException
+     */
+    public function storeIdFrom(array $args, int $default): int
+    {
+        return $this->resolveStoreId($args) ?? $default;
     }
 
     /**

@@ -68,7 +68,7 @@ class ProductUpdateTest extends TestCase
 
         $this->productRepository->expects($this->once())
             ->method('get')
-            ->with('sku-1', false, 0)
+            ->with('sku-1', false, $this->identicalTo(0))
             ->willReturn($product);
         $this->productRepository->expects($this->once())
             ->method('save')
@@ -97,7 +97,7 @@ class ProductUpdateTest extends TestCase
 
         $this->productRepository->expects($this->once())
             ->method('get')
-            ->with('sku-1', false, 3)
+            ->with('sku-1', false, $this->identicalTo(3))
             ->willReturn($product);
         $this->productRepository->expects($this->once())
             ->method('save')

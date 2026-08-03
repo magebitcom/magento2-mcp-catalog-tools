@@ -17,9 +17,12 @@ use Magebit\Mcp\Model\Tool\Schema\Builder\StringBuilder;
 use Magebit\Mcp\Model\Tool\Schema\Schema;
 use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
+use Magebit\McpCatalogTools\Model\StoreScope;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
+use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Catalog\Api\Data\CategoryInterfaceFactory;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\Store;
 
 /**
  * MCP write tool `catalog.category.create`. Required fields are `name` and a
@@ -34,11 +37,13 @@ class CategoryCreate implements ToolInterface, UnderlyingAclAwareInterface
      * @param CategoryRepositoryInterface $categoryRepository
      * @param CategoryInterfaceFactory $categoryFactory
      * @param CategoryFieldApplier $fieldApplier
+     * @param StoreScope $storeScope
      */
     public function __construct(
         private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly CategoryInterfaceFactory $categoryFactory,
-        private readonly CategoryFieldApplier $fieldApplier
+        private readonly CategoryFieldApplier $fieldApplier,
+        private readonly StoreScope $storeScope
     ) {
     }
 
@@ -65,7 +70,8 @@ class CategoryCreate implements ToolInterface, UnderlyingAclAwareInterface
     {
         return 'Create a new catalog category. Required: `name` and '
             . '`parent_id`. Use `catalog.category.list` with '
-            . '`filters: {level_to: 1}` to discover root category ids first.';
+            . '`filters: {level_to: 1}` to discover root category ids first. '
+            . 'Values are stored at global/default scope.';
     }
 
     /**
@@ -137,7 +143,13 @@ class CategoryCreate implements ToolInterface, UnderlyingAclAwareInterface
 
         $this->fieldApplier->applyOptional($category, $arguments);
 
-        $saved = $this->categoryRepository->save($category);
+        // `CategoryRepository::save()` stamps the store manager's current store
+        // onto the new category, so on `/mcp` (frontend area) the values would
+        // land on a store view and leave optional attributes with no global row.
+        $saved = $this->storeScope->run(
+            Store::DEFAULT_STORE_ID,
+            fn (): CategoryInterface => $this->categoryRepository->save($category)
+        );
 
         $payload = [
             'entity_id' => (int) $saved->getId(),
