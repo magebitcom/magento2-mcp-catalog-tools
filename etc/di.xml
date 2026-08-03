@@ -110,6 +110,18 @@
         </arguments>
     </type>
 
+    <!-- Product filter translators — extra `catalog.product.list` filter keys
+         that the built-in dispatch does not handle inline. -->
+    <type name="Magebit\McpCatalogTools\Model\Search\ProductSearchCriteriaBuilder">
+        <arguments>
+            <argument name="filterTranslators" xsi:type="array">
+                <item name="has_special_price" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\Search\FilterTranslator\HasSpecialPriceTranslator
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
     <!-- Category field resolvers (full set for `catalog.category.get`).
          `products` is included here but absent from the list-tool's default
          set below — `catalog.category.list` carrying a product-id array per

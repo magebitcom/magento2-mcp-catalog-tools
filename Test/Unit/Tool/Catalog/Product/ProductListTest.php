@@ -55,6 +55,7 @@ class ProductListTest extends TestCase
             'created_at_to' => 'string',
             'updated_at_from' => 'string',
             'updated_at_to' => 'string',
+            'has_special_price' => 'boolean',
         ];
         $this->assertSame(array_keys($expected), array_keys($props));
         foreach ($expected as $key => $type) {
