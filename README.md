@@ -83,6 +83,9 @@ wouldn't be allowed to perform the same action in the admin UI.
   `catalog.category.create`). Override rows created by earlier versions of
   these tools are not repaired automatically — reapply the desired value at
   global scope (or the correct store view) if you need to clean one up.
+  `catalog.product.get` reads the resolved store view, so a pre-existing
+  store-view override row will still mask a newly written global value when
+  reading back — such overrides are not repaired automatically.
 - **`catalog.category.get` reads true admin scope by default.** Without a
   `store_id`, the tool now reads at admin/default scope as documented. One
   consequence: the `products.product_ids` slice always lists every product
