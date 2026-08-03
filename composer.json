@@ -6,7 +6,7 @@
     "require": {
         "php": ">=8.1",
         "magento/framework": "^103.0",
-        "magebitcom/magento2-mcp-module": "*"
+        "magebitcom/magento2-mcp-module": "^1.1"
     },
     "autoload": {
         "files": [
