@@ -38,7 +38,9 @@ class CatalogProductGetTest extends McpTestCase
         foreach (['identity', 'state', 'pricing', 'stock', 'timestamps'] as $key) {
             self::assertArrayHasKey($key, $payload, sprintf('Missing %s slice.', $key));
         }
-        self::assertSame('simple', $payload['identity']['sku'] ?? null);
+        $identity = $payload['identity'] ?? null;
+        self::assertIsArray($identity);
+        self::assertSame('simple', $identity['sku'] ?? null);
     }
 
     /**
@@ -94,7 +96,9 @@ class CatalogProductGetTest extends McpTestCase
     {
         $body = $response['body'];
         self::assertIsArray($body);
-        $content = $body['result']['content'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $content = $result['content'] ?? null;
         self::assertIsArray($content);
         $decoded = json_decode((string) ($content[0]['text'] ?? ''), true);
         self::assertIsArray($decoded);

@@ -39,7 +39,9 @@ class CatalogCategoryUpdateTest extends McpTestCase
 
         $body = $response['body'];
         self::assertIsArray($body);
-        $content = $body['result']['content'] ?? null;
+        $result = $body['result'] ?? null;
+        self::assertIsArray($result);
+        $content = $result['content'] ?? null;
         self::assertIsArray($content);
         $payload = json_decode((string) ($content[0]['text'] ?? ''), true);
         self::assertIsArray($payload);
