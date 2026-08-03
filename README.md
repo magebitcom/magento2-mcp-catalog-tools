@@ -51,8 +51,8 @@ confirmation so MCP clients prompt before firing.
 
 | Tool | Confirm? | What it does |
 |---|---|---|
-| `catalog.product.create` | yes | Create a product. Required: sku, name, price, attribute_set_id, type_id, status, visibility (plus weight for physical types). Accepts top-level scalars (description, url_key, tax_class_id, meta_*) plus `custom_attributes`, `website_ids`, `category_ids`. |
-| `catalog.product.update` | yes | PATCH-style update by id or sku; only fields you provide are touched. Use `new_sku` to rename. |
+| `catalog.product.create` | yes | Create a product. Required: sku, name, price, attribute_set_id, type_id, status, visibility (plus weight for physical types). Accepts top-level scalars (description, url_key, tax_class_id, meta_*) plus `custom_attributes`, `website_ids`, `category_ids`. Values are saved at global/default scope. |
+| `catalog.product.update` | yes | PATCH-style update by id or sku; only fields you provide are touched. Use `new_sku` to rename. Saves at global/default scope; pass `store_code` for a deliberate store-view override. |
 | `catalog.product.delete` | yes | Permanently delete a product. |
 
 ### Categories (write)

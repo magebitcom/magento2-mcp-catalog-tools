@@ -28,14 +28,16 @@ class EntityFinder
     }
 
     /**
-     * Resolve a product from `id`/`product_id` or `sku` tool args.
+     * Resolve a product from `id`/`product_id` or `sku` tool args. `$storeId`
+     * null keeps the repository's own scope resolution (current store view).
      *
      * @param array $args
      * @phpstan-param array<string, mixed> $args
+     * @param int|null $storeId
      * @return ProductInterface
      * @throws LocalizedException
      */
-    public function productFrom(array $args): ProductInterface
+    public function productFrom(array $args, ?int $storeId = null): ProductInterface
     {
         $id = $this->pickNumeric($args, ['id', 'product_id']);
         $sku = $this->pickString($args, ['sku']);
@@ -43,14 +45,14 @@ class EntityFinder
 
         if ($id !== null) {
             try {
-                return $this->productRepository->getById($id);
+                return $this->productRepository->getById($id, false, $storeId);
             } catch (NoSuchEntityException $e) {
                 throw new LocalizedException(__('Product %1 not found.', $id), $e);
             }
         }
 
         try {
-            return $this->productRepository->get((string) $sku);
+            return $this->productRepository->get((string) $sku, false, $storeId);
         } catch (NoSuchEntityException $e) {
             throw new LocalizedException(__('Product with SKU "%1" not found.', (string) $sku), $e);
         }
