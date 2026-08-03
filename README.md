@@ -34,7 +34,7 @@ bin/magento cache:flush
 | Tool | What it does |
 |---|---|
 | `catalog.product.list` | Paginated product search; filter by sku (exact / `*glob*` / array), name substring, status, visibility, type_id, attribute_set_id, price range, qty range, category_id, website_id, created_at range, updated_at range. |
-| `catalog.product.get` | Single product by numeric id or SKU. Default response includes identity, state, pricing, tier prices, stock, categories (ids + names), websites, media gallery, links, configurable / bundle option metadata, custom attributes, and timestamps; narrow with `fields` / `exclude`. |
+| `catalog.product.get` | Single product by numeric id or SKU. Default response includes identity, state, pricing, tier prices, stock, categories (ids + names), websites, media gallery, links, configurable / bundle option metadata, configurable child variants (`variants` — sku, name, price, special_price, status per child), custom attributes, and timestamps; narrow with `fields` / `exclude`. |
 
 ### Categories (read)
 

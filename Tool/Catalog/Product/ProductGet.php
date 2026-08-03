@@ -70,7 +70,11 @@ class ProductGet implements ToolInterface
             . 'configuration attributes (and variant entity ids) and '
             . 'bundle-product options (title, type, required flag, linked '
             . 'SKUs); use it to discover variants of a configurable or the '
-            . 'item structure of a bundle.';
+            . 'item structure of a bundle. The `variants` slice resolves a '
+            . 'configurable\'s children to their sku, name, price, '
+            . 'special_price and status (null for non-configurables) — a '
+            . 'configurable parent itself carries no meaningful price, so '
+            . 'read real prices from there.';
     }
 
     /**
