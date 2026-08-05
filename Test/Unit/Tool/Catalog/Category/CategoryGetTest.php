@@ -64,7 +64,7 @@ class CategoryGetTest extends TestCase
         $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $categoryRepository->expects($this->once())
             ->method('get')
-            ->with(33)
+            ->with(33, $this->identicalTo(0))
             ->willReturn($category);
 
         $entityFinder = new EntityFinder(
@@ -78,5 +78,51 @@ class CategoryGetTest extends TestCase
 
         $this->assertInstanceOf(ToolResultInterface::class, $result);
         $this->assertSame(33, $result->getAuditSummary()['category_id']);
+    }
+
+    public function testDefaultsToAdminScopeAsDocumented(): void
+    {
+        $category = $this->createMock(CategoryInterface::class);
+        $category->method('getId')->willReturn(33);
+
+        $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
+        $categoryRepository->expects($this->once())
+            ->method('get')
+            ->with(33, $this->identicalTo(0))
+            ->willReturn($category);
+
+        $tool = new CategoryGet(
+            new EntityFinder(
+                $this->createMock(ProductRepositoryInterface::class),
+                $categoryRepository
+            ),
+            new ResolverPipeline(),
+            []
+        );
+
+        $tool->execute(['id' => 33]);
+    }
+
+    public function testExplicitStoreIdStillWins(): void
+    {
+        $category = $this->createMock(CategoryInterface::class);
+        $category->method('getId')->willReturn(33);
+
+        $categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
+        $categoryRepository->expects($this->once())
+            ->method('get')
+            ->with(33, 4)
+            ->willReturn($category);
+
+        $tool = new CategoryGet(
+            new EntityFinder(
+                $this->createMock(ProductRepositoryInterface::class),
+                $categoryRepository
+            ),
+            new ResolverPipeline(),
+            []
+        );
+
+        $tool->execute(['id' => 33, 'store_id' => 4]);
     }
 }

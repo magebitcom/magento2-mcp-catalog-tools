@@ -18,9 +18,11 @@ use Magebit\Mcp\Model\Tool\Schema\Schema;
 use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
 use Magebit\McpCatalogTools\Model\EntityFinder;
+use Magebit\McpCatalogTools\Model\StoreScope;
 use Magento\Catalog\Api\CategoryManagementInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\Store;
 
 /**
  * MCP write tool `catalog.category.update` (PATCH-style). Tree moves route
@@ -37,12 +39,14 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
      * @param CategoryRepositoryInterface $categoryRepository
      * @param CategoryManagementInterface $categoryManagement
      * @param CategoryFieldApplier $fieldApplier
+     * @param StoreScope $storeScope
      */
     public function __construct(
         private readonly EntityFinder $entityFinder,
         private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly CategoryManagementInterface $categoryManagement,
-        private readonly CategoryFieldApplier $fieldApplier
+        private readonly CategoryFieldApplier $fieldApplier,
+        private readonly StoreScope $storeScope
     ) {
     }
 
@@ -70,7 +74,9 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         return 'Partial update of a catalog category. Identify by `id`. Only '
             . 'fields you provide are touched. Changing `parent_id` moves '
             . 'the category in the tree (path / level rebuild) — use '
-            . '`after_id` to control sibling ordering at the destination.';
+            . '`after_id` to control sibling ordering at the destination. '
+            . 'Saves at global/default scope unless `store_id` targets a '
+            . 'specific store view.';
     }
 
     /**
@@ -82,7 +88,10 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
             ->integer('id', fn (IntegerBuilder $i) => $i->minimum(1)->required())
             ->integer('store_id', fn (IntegerBuilder $i) => $i
                 ->minimum(0)
-                ->description('Store scope for store-scoped attribute writes.'))
+                ->description('Store view id for an intentional store-view '
+                    . 'override. Omit (or pass 0) to save at global/default '
+                    . 'scope — the value then applies to every store view '
+                    . 'without creating overrides.'))
             ->string('name', fn (StringBuilder $s) => $s->minLength(1))
             ->integer('parent_id', fn (IntegerBuilder $i) => $i
                 ->minimum(1)
@@ -150,12 +159,29 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
      */
     public function execute(array $arguments): ToolResultInterface
     {
-        $category = $this->entityFinder->categoryFrom($arguments);
-        $categoryId = (int) $category->getId();
-        $currentParentId = $category->getParentId() !== null
-            ? (int) $category->getParentId()
-            : null;
+        $storeId = $this->entityFinder->storeIdFrom($arguments, Store::DEFAULT_STORE_ID);
 
+        // `CategoryRepository::save()` derives the write scope from the store
+        // manager's current store — not from the model — so the whole mutation
+        // has to run inside the resolved scope. Without this, `/mcp`'s frontend
+        // store view would receive store-view override rows.
+        return $this->storeScope->run(
+            $storeId,
+            fn (): ToolResultInterface => $this->applyUpdate($arguments, $storeId)
+        );
+    }
+
+    /**
+     * Apply the patch and save. Runs inside the resolved store scope.
+     *
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @param int $storeId
+     * @return ToolResultInterface
+     * @throws LocalizedException
+     */
+    private function applyUpdate(array $arguments, int $storeId): ToolResultInterface
+    {
         $patch = $arguments;
         unset($patch['id'], $patch['store_id']);
 
@@ -171,11 +197,14 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         }
         unset($patch['parent_id'], $patch['after_id']);
 
-        if ($newParentId !== null && $newParentId !== $currentParentId) {
-            $this->categoryManagement->move($categoryId, $newParentId, $afterId);
-            // Reload so the field applier and response see the rebuilt path/level.
-            $category = $this->entityFinder->categoryFrom(['id' => $categoryId]);
-        }
+        $moved = $newParentId !== null && $this->move($arguments, $newParentId, $afterId);
+
+        // Load at the write scope only now. `CategoryRepository` caches one
+        // instance per store id and `save()` re-gets that cached instance, so a
+        // load taken before the move would hand `save()` pre-move
+        // path/level/position/parent_id — all static columns, written back
+        // unconditionally — silently reverting the move.
+        $category = $this->entityFinder->categoryFrom($arguments, $storeId);
 
         $this->fieldApplier->applyOptional($category, $patch);
 
@@ -195,7 +224,7 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         }
 
         $changed = array_keys($patch);
-        if ($newParentId !== null && $newParentId !== $currentParentId) {
+        if ($moved) {
             $changed[] = 'parent_id';
         }
 
@@ -207,5 +236,37 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
                 'fields_changed' => $changed,
             ]
         );
+    }
+
+    /**
+     * Move the category when the requested parent differs from the current one.
+     * The parent is read from the *unscoped* instance — the same repository
+     * cache entry `CategoryManagement::move()` loads and mutates — so the
+     * scoped cache entry stays cold until the tree has been rebuilt.
+     *
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @param int $newParentId
+     * @param int|null $afterId
+     * @return bool Whether a move was performed.
+     * @throws LocalizedException
+     */
+    private function move(array $arguments, int $newParentId, ?int $afterId): bool
+    {
+        $unscopedArgs = $arguments;
+        unset($unscopedArgs['store_id']);
+
+        $category = $this->entityFinder->categoryFrom($unscopedArgs);
+        $currentParentId = $category->getParentId() !== null
+            ? (int) $category->getParentId()
+            : null;
+
+        if ($newParentId === $currentParentId) {
+            return false;
+        }
+
+        $this->categoryManagement->move((int) $category->getId(), $newParentId, $afterId);
+
+        return true;
     }
 }

@@ -86,52 +86,89 @@ The two arguments every read tool accepts:
 Useful when an LLM over-fetches or when a specific slice (like `media` on a
 200-row listing) is expensive.
 
-## Add a new filter to `catalog.product.list` / `catalog.category.list`
+## Adding a filter translator
+
+A filter translator handles one or more keys under a `list` tool's
+`filters` argument. Built-in keys (handled inline by the search builders)
+take priority; only unhandled keys fall through to translators.
 
 Built-in filters cover the common columns on `ProductInterface` and
-`CategoryInterface`. For custom EAV attributes or cross-table joins,
-implement the matching filter translator interface and register it:
+`CategoryInterface` — reach for a translator for custom EAV attributes,
+cross-table joins, or derived predicates.
+
+### Example — the shipped `has_special_price` filter
+
+`catalog.product.list` answers "what is on sale?" through a translator
+rather than a built-in key, because the predicate is a column *presence*
+test rather than a value comparison:
 
 ```php
-<?php
-declare(strict_types=1);
-
-namespace Vendor\Seo\Mcp\Filter;
+// Magebit/McpCatalogTools/Model/Search/FilterTranslator/HasSpecialPriceTranslator.php
+namespace Magebit\McpCatalogTools\Model\Search\FilterTranslator;
 
 use Magebit\McpCatalogTools\Api\ProductFilterTranslatorInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
+use Magento\Framework\Exception\LocalizedException;
 
-class ColorFilter implements ProductFilterTranslatorInterface
+class HasSpecialPriceTranslator implements ProductFilterTranslatorInterface
 {
     public function supports(string $key): bool
     {
-        return $key === 'color';
+        return $key === 'has_special_price';
     }
 
+    /**
+     * @throws LocalizedException when $value is not a boolean form.
+     */
     public function translate(string $key, mixed $value, SearchCriteriaBuilder $builder): void
     {
-        $builder->addFilter('color', (string) $value);
+        $builder->addFilter('special_price', true, $this->toBool($value) ? 'notnull' : 'null');
     }
 }
 ```
 
 ```xml
+<!-- Magebit/McpCatalogTools/etc/di.xml -->
 <type name="Magebit\McpCatalogTools\Model\Search\ProductSearchCriteriaBuilder">
     <arguments>
         <argument name="filterTranslators" xsi:type="array">
-            <item name="color" xsi:type="object">
-                Vendor\Seo\Mcp\Filter\ColorFilter
+            <item name="has_special_price" xsi:type="object">
+                Magebit\McpCatalogTools\Model\Search\FilterTranslator\HasSpecialPriceTranslator
             </item>
         </argument>
     </arguments>
 </type>
 ```
 
-Unsupported filter keys fail fast with `INVALID_PARAMS` rather than
-silently ignoring — your translator must claim the key via `supports()`
-before the built-in dispatch falls through. Use
-`CategoryFilterTranslatorInterface` + `CategorySearchCriteriaBuilder` for
-the category side.
+It matches on `special_price` presence only — it does not evaluate the
+`special_from_date` / `special_to_date` window, so a product with an
+expired or future special price still counts as "has one".
+
+Your own translator follows the same two steps from a third-party module:
+implement the interface, then merge one `<item>` into the same
+`filterTranslators` argument. DI-array items merge across modules, so the
+shipped translators stay registered.
+
+Translator interfaces, by tool family:
+
+- `Magebit\McpCatalogTools\Api\ProductFilterTranslatorInterface` — wired
+  into `Model\Search\ProductSearchCriteriaBuilder`, serves
+  `catalog.product.list`.
+- `Magebit\McpCatalogTools\Api\CategoryFilterTranslatorInterface` — wired
+  into `Model\Search\CategorySearchCriteriaBuilder`, serves
+  `catalog.category.list`.
+
+Both receive a `Magento\Framework\Api\SearchCriteriaBuilder`.
+
+Translators are consulted in DI order. The first translator whose
+`supports()` returns `true` for a given key handles it; subsequent
+translators do not see that key. Unsupported filter keys fail fast with
+`INVALID_PARAMS` rather than being silently ignored — your translator must
+claim the key via `supports()`.
+
+Finally, declare the new key in the tool's `getInputSchema()` `filters`
+properties map (or leave it undeclared and rely on
+`additionalProperties: true`) so MCP clients discover it.
 
 ## Per-entity resolver interfaces
 

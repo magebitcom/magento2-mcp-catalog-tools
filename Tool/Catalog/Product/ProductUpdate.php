@@ -20,7 +20,10 @@ use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
 use Magebit\McpCatalogTools\Model\EntityFinder;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * MCP write tool `catalog.product.update`.
@@ -37,11 +40,13 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
      * @param EntityFinder $entityFinder
      * @param ProductRepositoryInterface $productRepository
      * @param ProductFieldApplier $fieldApplier
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         private readonly EntityFinder $entityFinder,
         private readonly ProductRepositoryInterface $productRepository,
-        private readonly ProductFieldApplier $fieldApplier
+        private readonly ProductFieldApplier $fieldApplier,
+        private readonly StoreManagerInterface $storeManager
     ) {
     }
 
@@ -72,7 +77,8 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
             . 'assignments. Use `new_sku` to rename — URLs using the old SKU '
             . 'will 404. A product\'s `type_id` and `attribute_set_id` are '
             . 'fixed at creation and cannot be changed here, mirroring the '
-            . 'admin UI.';
+            . 'admin UI. Saves at global/default scope unless `store_code` '
+            . 'targets a specific store view.';
     }
 
     /**
@@ -86,6 +92,10 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
                 ->minLength(1)
                 ->description('The SKU used to locate the product. Use '
                     . '`new_sku` to change it.'))
+            ->string('store_code', fn (StringBuilder $s) => $s
+                ->description('Store view code for an intentional store-view override. '
+                    . 'Omit (or pass "all") to save at global/default scope — the value '
+                    . 'then applies to every store view without creating overrides.'))
             ->string('new_sku', fn (StringBuilder $s) => $s->minLength(1))
             ->string('name', fn (StringBuilder $s) => $s->minLength(1))
             ->number('price', fn (NumberBuilder $n) => $n)
@@ -148,7 +158,8 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
      */
     public function execute(array $arguments): ToolResultInterface
     {
-        $product = $this->entityFinder->productFrom($arguments);
+        $storeId = $this->resolveStoreId($arguments);
+        $product = $this->entityFinder->productFrom($arguments, $storeId);
 
         $patch = $arguments;
         if (array_key_exists('new_sku', $patch)) {
@@ -162,11 +173,18 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
         // type-specific rows. Strip them defensively even though they are no
         // longer in the input schema, so a future schema change can't
         // silently re-open the mutation.
-        unset($patch['id'], $patch['type_id'], $patch['attribute_set_id']);
+        unset($patch['id'], $patch['type_id'], $patch['attribute_set_id'], $patch['store_code']);
 
         $this->fieldApplier->applyOptional($product, $patch);
         $this->fieldApplier->applyWebsites($product, $patch);
         $this->fieldApplier->applyCategoryIds($product, $patch);
+
+        // `/mcp` runs in the frontend area, so an unscoped save would write
+        // store-view override rows and detach the attributes from default
+        // scope. Pin the scope resolved above (admin/0 unless `store_code`).
+        if ($product instanceof Product) {
+            $product->setStoreId($storeId);
+        }
 
         $saved = $this->productRepository->save($product);
 
@@ -192,5 +210,31 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
                 'fields_changed' => array_keys($patch),
             ]
         );
+    }
+
+    /**
+     * Map the optional `store_code` argument to a store id; absent, empty or
+     * "all" means global/default scope.
+     *
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @return int
+     * @throws LocalizedException
+     */
+    private function resolveStoreId(array $arguments): int
+    {
+        $code = $arguments['store_code'] ?? null;
+        if ($code === null || $code === '' || $code === 'all') {
+            return Store::DEFAULT_STORE_ID;
+        }
+        if (!is_string($code)) {
+            throw new LocalizedException(__('"store_code" must be a store view code string.'));
+        }
+        foreach ($this->storeManager->getStores(true) as $store) {
+            if ($store->getCode() === $code) {
+                return (int) $store->getId();
+            }
+        }
+        throw new LocalizedException(__('Unknown store view code "%1".', $code));
     }
 }

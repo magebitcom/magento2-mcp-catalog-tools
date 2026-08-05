@@ -20,7 +20,9 @@ use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\Store;
 
 /**
  * MCP write tool `catalog.product.create`.
@@ -68,7 +70,8 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
             . '`weight` is required for physical products. `custom_attributes` '
             . 'is a map of attribute_code => value for any EAV attributes '
             . 'not covered by the top-level schema. `website_ids` and '
-            . '`category_ids` are arrays of ids.';
+            . '`category_ids` are arrays of ids. Values are stored at '
+            . 'global/default scope.';
     }
 
     /**
@@ -146,6 +149,13 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
         $this->fieldApplier->applyOptional($product, $arguments);
         $this->fieldApplier->applyWebsites($product, $arguments);
         $this->fieldApplier->applyCategoryIds($product, $arguments);
+
+        // `/mcp` runs in the frontend area; without pinning the scope a new
+        // product's values land on the resolved store view, leaving optional
+        // attributes with no global value at all.
+        if ($product instanceof Product) {
+            $product->setStoreId(Store::DEFAULT_STORE_ID);
+        }
 
         $saved = $this->productRepository->save($product);
 

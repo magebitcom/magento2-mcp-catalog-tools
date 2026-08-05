@@ -69,7 +69,7 @@ class ProductList implements ToolInterface
         return 'Search catalog products with optional filters (sku, name, '
             . 'status, visibility, type_id, attribute_set_id, price range, '
             . 'qty range, category_id, website_id, created_at range, '
-            . 'updated_at range) and paging. Each row is the same shape as '
+            . 'updated_at range, has_special_price) and paging. Each row is the same shape as '
             . '`catalog.product.get`; use `fields`/`exclude` to narrow.';
     }
 
@@ -99,6 +99,7 @@ class ProductList implements ToolInterface
                     'created_at_to' => ['type' => 'string', 'description' => 'Created ISO date/datetime upper bound.'],
                     'updated_at_from' => ['type' => 'string', 'description' => 'Updated ISO date/datetime lower bound.'],
                     'updated_at_to' => ['type' => 'string', 'description' => 'Updated ISO date/datetime upper bound.'],
+                    'has_special_price' => ['type' => 'boolean', 'description' => 'Only products with (true) / without (false) a special price set. Ignores special-price date windows.'],
                 ]
             ))
             ->with(Sort::fields(ProductSearchCriteriaBuilder::SORTABLE_FIELDS, 'entity_id'))

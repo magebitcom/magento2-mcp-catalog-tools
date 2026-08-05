@@ -77,6 +77,13 @@
                 <item name="type_options" xsi:type="object">
                     Magebit\McpCatalogTools\Model\FieldResolver\Product\TypeOptionsResolver
                 </item>
+                <!-- `variants` is deliberately absent from the list-tool set
+                     below — one child-collection load per row is an N+1.
+                     Get-tool callers that don't need it can pass
+                     `exclude: ["variants"]`. -->
+                <item name="variants" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\FieldResolver\Product\VariantsResolver
+                </item>
                 <item name="custom_attributes" xsi:type="object">
                     Magebit\McpCatalogTools\Model\FieldResolver\Product\CustomAttributesResolver
                 </item>
@@ -105,6 +112,18 @@
                 </item>
                 <item name="timestamps" xsi:type="object">
                     Magebit\McpCatalogTools\Model\FieldResolver\Product\TimestampsResolver
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Product filter translators — extra `catalog.product.list` filter keys
+         that the built-in dispatch does not handle inline. -->
+    <type name="Magebit\McpCatalogTools\Model\Search\ProductSearchCriteriaBuilder">
+        <arguments>
+            <argument name="filterTranslators" xsi:type="array">
+                <item name="has_special_price" xsi:type="object">
+                    Magebit\McpCatalogTools\Model\Search\FilterTranslator\HasSpecialPriceTranslator
                 </item>
             </argument>
         </arguments>
