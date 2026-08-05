@@ -80,13 +80,26 @@ class ProductList implements ToolInterface
     {
         return Schema::object()
             ->with(Filters::describing(
-                'Filter clauses. Built-in keys: sku '
-                . '(scalar | *glob* | array ⇒ IN), name (substring), '
-                . 'status (bool), visibility/type_id/attribute_set_id '
-                . '(scalar | array), price_from/price_to, '
-                . 'qty_from/qty_to, category_id (scalar | array), '
-                . 'website_id (scalar | array), created_at_from/'
-                . 'created_at_to, updated_at_from/updated_at_to.'
+                'Filter clauses. Scalar or array values (array ⇒ IN); '
+                . '`sku` also accepts a `*glob*` wildcard.',
+                [
+                    'sku' => ['type' => ['string', 'array'], 'description' => 'SKU: exact, `*glob*` wildcard, or array ⇒ IN.'],
+                    'name' => ['type' => 'string', 'description' => 'Substring match on product name.'],
+                    'status' => ['type' => 'boolean', 'description' => 'Enabled (true) or disabled (false).'],
+                    'visibility' => ['type' => ['integer', 'array'], 'description' => 'Visibility id(s) (1-4).'],
+                    'type_id' => ['type' => ['string', 'array'], 'description' => 'Product type code(s), e.g. "simple".'],
+                    'attribute_set_id' => ['type' => ['integer', 'array'], 'description' => 'Attribute set id(s).'],
+                    'category_id' => ['type' => ['integer', 'array'], 'description' => 'Category id(s) the product is assigned to.'],
+                    'website_id' => ['type' => ['integer', 'array'], 'description' => 'Website id(s).'],
+                    'price_from' => ['type' => 'number', 'description' => 'Minimum price.'],
+                    'price_to' => ['type' => 'number', 'description' => 'Maximum price.'],
+                    'qty_from' => ['type' => 'number', 'description' => 'Minimum stock quantity.'],
+                    'qty_to' => ['type' => 'number', 'description' => 'Maximum stock quantity.'],
+                    'created_at_from' => ['type' => 'string', 'description' => 'Created ISO date/datetime lower bound.'],
+                    'created_at_to' => ['type' => 'string', 'description' => 'Created ISO date/datetime upper bound.'],
+                    'updated_at_from' => ['type' => 'string', 'description' => 'Updated ISO date/datetime lower bound.'],
+                    'updated_at_to' => ['type' => 'string', 'description' => 'Updated ISO date/datetime upper bound.'],
+                ]
             ))
             ->with(Sort::fields(ProductSearchCriteriaBuilder::SORTABLE_FIELDS, 'entity_id'))
             ->with(Pagination::maxPageSize(ProductSearchCriteriaBuilder::MAX_PAGE_SIZE))
