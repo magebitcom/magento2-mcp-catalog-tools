@@ -75,12 +75,14 @@ class StockSet implements ToolInterface, UnderlyingAclAwareInterface
     public function getDescription(): string
     {
         return 'Set stock levels and stock settings for one or more products, '
-            . 'by SKU. Only the fields you pass on each item are changed. '
-            . 'Processes up to ' . self::MAX_ITEMS . ' items per call and reports '
-            . 'per-item success or failure, so one bad SKU does not fail the '
-            . 'batch. This writes legacy stock, which on a multi-source store '
-            . 'resolves to the default source — use `inventory.source_item.set` '
-            . 'to address a specific warehouse.';
+            . 'by SKU. INTENDED FOR STORES WITH MULTI-SOURCE INVENTORY (MSI) '
+            . 'DISABLED — it writes Magento\'s legacy single-stock tables. If MSI '
+            . 'is enabled, prefer `inventory.source_item.set`, which addresses a '
+            . 'specific source; a legacy write on a multi-source store silently '
+            . 'resolves to the default source only, and each result row will say '
+            . 'so. Only the fields you pass on each item are changed. Processes up '
+            . 'to ' . self::MAX_ITEMS . ' items per call and reports per-item '
+            . 'success or failure, so one bad SKU does not fail the batch.';
     }
 
     /**

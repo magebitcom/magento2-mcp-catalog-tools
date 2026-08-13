@@ -70,9 +70,11 @@ class MediaAdd implements ToolInterface, UnderlyingAclAwareInterface
     {
         return 'Upload an image to a product gallery. Identify the product by '
             . '`id` or `sku`. `content_base64` is the raw image, base64-encoded '
-            . '(a `data:image/jpeg;base64,...` URI is also accepted). JPEG, PNG, '
-            . 'GIF and WebP only, 8 MB max — the type is detected from the bytes, '
-            . 'not the filename. Use `types` to make the image the main product '
+            . '(a `data:image/jpeg;base64,...` URI is also accepted). JPEG, PNG '
+            . 'and GIF on a stock Magento — the accepted set is whatever this '
+            . 'store\'s image validator allows, and WebP is not in it by default. '
+            . '8 MB max, and the type is detected from the bytes, not the '
+            . 'filename. Use `types` to make the image the main product '
             . 'image, thumbnail, or swatch; each role belongs to one image at a '
             . 'time, so assigning it here removes it from whichever image held it '
             . 'before. Larger uploads may need the MCP server\'s '
@@ -94,9 +96,10 @@ class MediaAdd implements ToolInterface, UnderlyingAclAwareInterface
             ->rawProperty('content_base64', [
                 'type' => 'string',
                 'minLength' => 1,
-                'description' => 'Base64-encoded image bytes, or an RFC 2397 data URI.',
+                'description' => 'Base64-encoded image bytes, or an RFC 2397 data URI. '
+                    . 'The accept list is the stock Magento set; this store may allow more.',
                 'x-mcp-file' => [
-                    'accept' => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+                    'accept' => ['image/jpeg', 'image/png', 'image/gif'],
                     'maxSize' => ImagePayloadFactory::MAX_IMAGE_BYTES,
                 ],
             ], true)

@@ -11,6 +11,7 @@ namespace Magebit\McpCatalogTools\Test\Unit\Model\Media;
 use Magebit\McpCatalogTools\Model\Media\ImagePayloadFactory;
 use Magento\Framework\Api\Data\ImageContentInterface;
 use Magento\Framework\Api\Data\ImageContentInterfaceFactory;
+use Magento\Framework\Api\ImageContentValidator;
 use Magento\Framework\Exception\LocalizedException;
 use PHPUnit\Framework\TestCase;
 
@@ -19,6 +20,10 @@ class ImagePayloadFactoryTest extends TestCase
     /** 1x1 transparent PNG. */
     private const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42m'
         . 'P8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+    /** 8x8 WebP — a real image, but one Magento's gallery refuses. */
+    private const WEBP_BASE64 = 'UklGRjYAAABXRUJQVlA4ICoAAACQAQCdASoIAAgAAUAmJaACdLoAA5gA'
+        . 'm/xviC9q8f/fAn/vAn/vAn+2wAA=';
 
     /** 1x1 GIF. */
     private const GIF_BASE64 = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -36,6 +41,18 @@ class ImagePayloadFactoryTest extends TestCase
         $captured = $this->capture('data:image/gif;name=x.gif;base64,' . self::GIF_BASE64, 'anim.gif');
 
         $this->assertSame('image/gif', $captured['type']);
+    }
+
+    /**
+     * Magento's own gallery validator rejects WebP, so accepting it here would
+     * only defer the failure to a less clear error.
+     */
+    public function testRejectsWebpBecauseMagentoWould(): void
+    {
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('is not accepted by this store');
+
+        $this->capture(self::WEBP_BASE64, 'shot.webp');
     }
 
     /**
@@ -98,7 +115,8 @@ class ImagePayloadFactoryTest extends TestCase
 
     /**
      * Runs the factory against a recording ImageContentInterface and returns
-     * what it set.
+     * what it set. The recorder also answers the getters, because the real
+     * validator reads them back.
      *
      * @param string $payload
      * @param string|null $filename
@@ -125,11 +143,28 @@ class ImagePayloadFactoryTest extends TestCase
                 $captured['name'] = (string) $value;
             }
         );
+        // Closures, not arrow functions — `fn` captures by value and would
+        // freeze an empty array here.
+        $content->method('getBase64EncodedData')->willReturnCallback(
+            function () use (&$captured) {
+                return $captured['data'] ?? null;
+            }
+        );
+        $content->method('getType')->willReturnCallback(
+            function () use (&$captured) {
+                return $captured['type'] ?? null;
+            }
+        );
+        $content->method('getName')->willReturnCallback(
+            function () use (&$captured) {
+                return $captured['name'] ?? null;
+            }
+        );
 
         $contentFactory = $this->createMock(ImageContentInterfaceFactory::class);
         $contentFactory->method('create')->willReturn($content);
 
-        (new ImagePayloadFactory($contentFactory))->create($payload, $filename);
+        (new ImagePayloadFactory($contentFactory, new ImageContentValidator()))->create($payload, $filename);
 
         /** @var array<string, string> $captured */
         return $captured;

@@ -64,19 +64,29 @@ confirmation so MCP clients prompt before firing.
 `catalog.product.create` also accepts `qty` / `is_in_stock` so a new product
 lands sellable in one call.
 
-This writes **legacy** stock via `StockRegistryInterface`. On a multi-source
-(MSI) store those writes resolve to the default source only, so each result row
-carries a warning pointing at `inventory.source_item.set` — install
+**These stock tools target stores with Multi-Source Inventory (MSI) disabled.**
+They write Magento's legacy single-stock tables via `StockRegistryInterface`,
+which is the whole inventory model on an MSI-free store.
+
+If MSI *is* enabled, use
 [`Magebit_McpInventoryTools`](https://github.com/magebitcom/magento2-mcp-inventory-tools)
-to address a specific warehouse. Without that module the check assumes
+instead — `inventory.source_item.set` addresses a specific source, whereas a
+legacy write resolves to the default source only. With that module installed,
+every result row from `catalog.product.stock.set` on a multi-source store
+carries a warning saying exactly that. Without it the check assumes
 single-source and stays quiet; the seam is
 `Magebit\McpCatalogTools\Api\SingleSourceModeCheckerInterface`.
+
+One MSI quirk worth knowing: while MSI is installed it forces `min_qty` to `0`
+on read whenever backorders are enabled (`AdaptMinQtyToBackordersPlugin`), so a
+stored threshold reads back as zero. Without MSI the stored value is returned
+as written.
 
 ### Media (write)
 
 | Tool | Confirm? | What it does |
 |---|---|---|
-| `catalog.product.media.add` | yes | Upload an image to a product gallery. `content_base64` takes the raw bytes base64-encoded, or an RFC 2397 `data:` URI. JPEG / PNG / GIF / WebP, 8 MB max. |
+| `catalog.product.media.add` | yes | Upload an image to a product gallery. `content_base64` takes the raw bytes base64-encoded, or an RFC 2397 `data:` URI. JPEG / PNG / GIF, 8 MB max. |
 | `catalog.product.media.update` | yes | PATCH-style metadata update by `entry_id` — `label`, `position`, `disabled`, `types`. The file itself is not replaceable; remove and re-add. |
 | `catalog.product.media.remove` | yes | Permanently remove a gallery entry. The file is deleted, not just unlinked. |
 
@@ -84,6 +94,18 @@ The image type is detected from the decoded bytes, never from the supplied
 filename — a payload that doesn't decode as a real image is rejected, and the
 stored extension is derived from the sniffed type. Filenames are stripped of
 path components before use.
+
+Which types are accepted is decided by Magento's own
+`Magento\Framework\Api\ImageContentValidator`, the same service the gallery
+save uses, so a store that widens that allowlist through `di.xml` widens this
+tool with it. Out of the box that means JPEG, PNG and GIF — **not WebP**.
+
+**Known Magento behaviour:** `catalog.product.media.update` goes through
+`ProductAttributeMediaGalleryManagementInterface::update()`, which re-copies the
+image file on every call (`photo.jpg` becomes `photo_1.jpg`, then
+`photo_1_1.jpg`). The gallery entry keeps its id and points at the newest file;
+the previous file is left on disk. This is Magento's behaviour, not this
+module's — budget for it if you script bulk metadata updates.
 
 `types` assigns image roles (`image`, `small_image`, `thumbnail`,
 `swatch_image`). Each role belongs to one image at a time, so assigning it here

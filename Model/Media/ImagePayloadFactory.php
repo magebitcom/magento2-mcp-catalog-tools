@@ -10,6 +10,8 @@ namespace Magebit\McpCatalogTools\Model\Media;
 
 use Magento\Framework\Api\Data\ImageContentInterface;
 use Magento\Framework\Api\Data\ImageContentInterfaceFactory;
+use Magento\Framework\Api\ImageContentValidator;
+use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 
 /**
@@ -18,16 +20,22 @@ use Magento\Framework\Exception\LocalizedException;
  * Accepts either a bare base64 string or an RFC 2397 data URI, the wire format
  * MCP's file-input proposal (SEP-2356) settles on. The declared mime type is
  * never trusted — the type is sniffed from the decoded bytes.
+ *
+ * Which types are acceptable is decided by {@see ImageContentValidator}, the
+ * same service the gallery save runs afterwards, so a store that widens the
+ * allowlist through di.xml widens this tool with it.
  */
 class ImagePayloadFactory
 {
     public const MAX_IMAGE_BYTES = 8388608;
 
     /**
-     * Sniffed mime type => canonical extension. Doubles as the allowlist.
+     * Canonical extension per mime type, used only to name the stored file.
+     * The validator owns acceptance; this map owns spelling.
      */
-    private const ALLOWED_TYPES = [
+    public const EXTENSION_BY_MIME = [
         'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
         'image/png' => 'png',
         'image/gif' => 'gif',
         'image/webp' => 'webp',
@@ -37,9 +45,11 @@ class ImagePayloadFactory
 
     /**
      * @param ImageContentInterfaceFactory $imageContentFactory
+     * @param ImageContentValidator $imageContentValidator
      */
     public function __construct(
-        private readonly ImageContentInterfaceFactory $imageContentFactory
+        private readonly ImageContentInterfaceFactory $imageContentFactory,
+        private readonly ImageContentValidator $imageContentValidator
     ) {
     }
 
@@ -80,9 +90,33 @@ class ImagePayloadFactory
         $content = $this->imageContentFactory->create();
         $content->setBase64EncodedData(base64_encode($binary));
         $content->setType($mimeType);
-        $content->setName($this->normalizeFilename($filename, self::ALLOWED_TYPES[$mimeType]));
+        $content->setName($this->normalizeFilename($filename, $this->extensionFor($mimeType)));
+
+        $this->assertMagentoAccepts($content, $mimeType);
 
         return $content;
+    }
+
+    /**
+     * Run Magento's own gallery validator up front, so an unsupported type is
+     * reported here — naming the type — rather than as an opaque failure during
+     * the save.
+     *
+     * @param ImageContentInterface $content
+     * @param string $mimeType
+     * @return void
+     * @throws LocalizedException
+     */
+    private function assertMagentoAccepts(ImageContentInterface $content, string $mimeType): void
+    {
+        try {
+            $this->imageContentValidator->isValid($content);
+        } catch (InputException $e) {
+            throw new LocalizedException(
+                __('Image type "%1" is not accepted by this store: %2', $mimeType, $e->getMessage()),
+                $e
+            );
+        }
     }
 
     /**
@@ -121,16 +155,23 @@ class ImagePayloadFactory
             throw new LocalizedException(__('Image content is not a readable image.'));
         }
 
-        $mimeType = strtolower($properties['mime']);
-        if (!array_key_exists($mimeType, self::ALLOWED_TYPES)) {
-            throw new LocalizedException(__(
-                'Image type "%1" is not supported. Allowed: %2.',
-                $mimeType,
-                implode(', ', array_keys(self::ALLOWED_TYPES))
-            ));
+        return strtolower($properties['mime']);
+    }
+
+    /**
+     * @param string $mimeType
+     * @return string
+     */
+    private function extensionFor(string $mimeType): string
+    {
+        if (isset(self::EXTENSION_BY_MIME[$mimeType])) {
+            return self::EXTENSION_BY_MIME[$mimeType];
         }
 
-        return $mimeType;
+        $subtype = substr($mimeType, strpos($mimeType, '/') + 1);
+        $subtype = (string) preg_replace('/[^a-z0-9]+/', '', $subtype);
+
+        return $subtype !== '' ? $subtype : 'img';
     }
 
     /**
