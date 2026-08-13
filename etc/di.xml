@@ -39,9 +39,25 @@
                 <item name="catalog.category.delete" xsi:type="object">
                     Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryDelete
                 </item>
+                <item name="catalog.product.stock.set" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\Stock\StockSet
+                </item>
+                <item name="catalog.product.media.add" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\Media\MediaAdd
+                </item>
+                <item name="catalog.product.media.update" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\Media\MediaUpdate
+                </item>
+                <item name="catalog.product.media.remove" xsi:type="object">
+                    Magebit\McpCatalogTools\Tool\Catalog\Product\Media\MediaRemove
+                </item>
             </argument>
         </arguments>
     </type>
+
+    <!-- Replaced by Magebit_McpInventoryTools with an MSI-backed check. -->
+    <preference for="Magebit\McpCatalogTools\Api\SingleSourceModeCheckerInterface"
+                type="Magebit\McpCatalogTools\Model\Stock\AssumeSingleSourceMode"/>
 
     <!-- Product field resolvers (full set for `catalog.product.get`). -->
     <type name="Magebit\McpCatalogTools\Tool\Catalog\Product\ProductGet">

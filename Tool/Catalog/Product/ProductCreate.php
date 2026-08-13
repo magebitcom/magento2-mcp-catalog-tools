@@ -12,6 +12,7 @@ use Magebit\Mcp\Api\ToolInterface;
 use Magebit\Mcp\Api\ToolResultInterface;
 use Magebit\Mcp\Api\UnderlyingAclAwareInterface;
 use Magebit\Mcp\Model\Tool\Schema\Builder\ArrayBuilder;
+use Magebit\Mcp\Model\Tool\Schema\Builder\BooleanBuilder;
 use Magebit\Mcp\Model\Tool\Schema\Builder\IntegerBuilder;
 use Magebit\Mcp\Model\Tool\Schema\Builder\NumberBuilder;
 use Magebit\Mcp\Model\Tool\Schema\Builder\StringBuilder;
@@ -21,6 +22,7 @@ use Magebit\Mcp\Model\Tool\WriteMode;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Store\Model\Store;
 
@@ -36,11 +38,13 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
      * @param ProductRepositoryInterface $productRepository
      * @param ProductInterfaceFactory $productFactory
      * @param ProductFieldApplier $fieldApplier
+     * @param StockRegistryInterface $stockRegistry
      */
     public function __construct(
         private readonly ProductRepositoryInterface $productRepository,
         private readonly ProductInterfaceFactory $productFactory,
-        private readonly ProductFieldApplier $fieldApplier
+        private readonly ProductFieldApplier $fieldApplier,
+        private readonly StockRegistryInterface $stockRegistry
     ) {
     }
 
@@ -88,6 +92,10 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
             ->integer('status', fn (IntegerBuilder $i) => $i->enum([1, 2])->required())
             ->integer('visibility', fn (IntegerBuilder $i) => $i->enum([1, 2, 3, 4])->required())
             ->number('weight', fn (NumberBuilder $n) => $n)
+            ->number('qty', fn (NumberBuilder $n) => $n
+                ->description('Initial quantity on hand. Omit to leave stock untouched.'))
+            ->boolean('is_in_stock', fn (BooleanBuilder $b) => $b
+                ->description('Initial stock availability. Defaults to true when `qty` is above zero.'))
             ->string('url_key', fn (StringBuilder $s) => $s)
             ->integer('tax_class_id', fn (IntegerBuilder $i) => $i->minimum(0))
             ->string('description', fn (StringBuilder $s) => $s)
@@ -159,6 +167,8 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
 
         $saved = $this->productRepository->save($product);
 
+        $stock = $this->applyInitialStock((string) $saved->getSku(), $arguments);
+
         $payload = [
             'entity_id' => (int) $saved->getId(),
             'sku' => (string) $saved->getSku(),
@@ -166,6 +176,7 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
             'type_id' => (string) $saved->getTypeId(),
             'status' => $saved->getStatus() !== null ? (int) $saved->getStatus() : null,
             'visibility' => $saved->getVisibility() !== null ? (int) $saved->getVisibility() : null,
+            'stock' => $stock,
         ];
 
         $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -181,5 +192,40 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
                 'type_id' => (string) $saved->getTypeId(),
             ]
         );
+    }
+
+    /**
+     * Seed the new product's stock row. Runs after the product save because the
+     * stock registry addresses items by SKU, which only exists once saved.
+     *
+     * @param string $sku
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @return array<string, mixed>|null
+     */
+    private function applyInitialStock(string $sku, array $arguments): ?array
+    {
+        $hasQty = isset($arguments['qty']) && is_numeric($arguments['qty']);
+        $hasIsInStock = array_key_exists('is_in_stock', $arguments);
+
+        if ($sku === '' || (!$hasQty && !$hasIsInStock)) {
+            return null;
+        }
+
+        $stockItem = $this->stockRegistry->getStockItemBySku($sku);
+
+        if ($hasQty) {
+            $stockItem->setQty((float) $arguments['qty']);
+        }
+        $stockItem->setIsInStock(
+            $hasIsInStock ? (bool) $arguments['is_in_stock'] : ($hasQty && (float) $arguments['qty'] > 0)
+        );
+
+        $this->stockRegistry->updateStockItemBySku($sku, $stockItem);
+
+        return [
+            'qty' => (float) $stockItem->getQty(),
+            'is_in_stock' => (bool) $stockItem->getIsInStock(),
+        ];
     }
 }

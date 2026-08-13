@@ -55,6 +55,47 @@ confirmation so MCP clients prompt before firing.
 | `catalog.product.update` | yes | PATCH-style update by id or sku; only fields you provide are touched. Use `new_sku` to rename. Saves at global/default scope; pass `store_code` for a deliberate store-view override. |
 | `catalog.product.delete` | yes | Permanently delete a product. |
 
+### Stock (write)
+
+| Tool | Confirm? | What it does |
+|---|---|---|
+| `catalog.product.stock.set` | yes | Set stock levels and settings for up to 200 SKUs per call: `qty`, `is_in_stock`, `manage_stock`, `backorders`, `min_qty`, `notify_stock_qty`, `min_sale_qty`, `max_sale_qty`. Only the fields you pass per item are changed, and setting one clears its `use_config_*` flag so the value actually takes effect. Reports per-item success or failure, so one bad SKU doesn't fail the batch. |
+
+`catalog.product.create` also accepts `qty` / `is_in_stock` so a new product
+lands sellable in one call.
+
+This writes **legacy** stock via `StockRegistryInterface`. On a multi-source
+(MSI) store those writes resolve to the default source only, so each result row
+carries a warning pointing at `inventory.source_item.set` — install
+[`Magebit_McpInventoryTools`](https://github.com/magebitcom/magento2-mcp-inventory-tools)
+to address a specific warehouse. Without that module the check assumes
+single-source and stays quiet; the seam is
+`Magebit\McpCatalogTools\Api\SingleSourceModeCheckerInterface`.
+
+### Media (write)
+
+| Tool | Confirm? | What it does |
+|---|---|---|
+| `catalog.product.media.add` | yes | Upload an image to a product gallery. `content_base64` takes the raw bytes base64-encoded, or an RFC 2397 `data:` URI. JPEG / PNG / GIF / WebP, 8 MB max. |
+| `catalog.product.media.update` | yes | PATCH-style metadata update by `entry_id` — `label`, `position`, `disabled`, `types`. The file itself is not replaceable; remove and re-add. |
+| `catalog.product.media.remove` | yes | Permanently remove a gallery entry. The file is deleted, not just unlinked. |
+
+The image type is detected from the decoded bytes, never from the supplied
+filename — a payload that doesn't decode as a real image is rejected, and the
+stored extension is derived from the sniffed type. Filenames are stripped of
+path components before use.
+
+`types` assigns image roles (`image`, `small_image`, `thumbnail`,
+`swatch_image`). Each role belongs to one image at a time, so assigning it here
+removes it from whichever image held it before.
+
+**Request size.** Base64 inflates a file by roughly a third, and the MCP
+endpoint caps request bodies at 256 KB by default. For real product photos raise
+**Stores → Configuration → Magebit → MCP Server → Max Request Body (KB)** (an
+8 MB image needs about `11000`) *and* raise the matching web-server limit —
+nginx `client_max_body_size` or Apache `LimitRequestBody` — otherwise the upload
+is rejected before Magento sees it.
+
 ### Categories (write)
 
 | Tool | Confirm? | What it does |
