@@ -31,6 +31,14 @@
                                       title="Tool: Update Category" sortOrder="211"/>
                             <resource id="Magebit_McpCatalogTools::tool_catalog_category_delete"
                                       title="Tool: Delete Category" sortOrder="212"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_stock_set"
+                                      title="Tool: Set Product Stock" sortOrder="220"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_media_add"
+                                      title="Tool: Add Product Image" sortOrder="230"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_media_update"
+                                      title="Tool: Update Product Image" sortOrder="231"/>
+                            <resource id="Magebit_McpCatalogTools::tool_catalog_product_media_remove"
+                                      title="Tool: Remove Product Image" sortOrder="232"/>
 
                         </resource>
                     </resource>
