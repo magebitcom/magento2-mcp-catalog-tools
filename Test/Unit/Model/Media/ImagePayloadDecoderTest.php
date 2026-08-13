@@ -8,14 +8,14 @@ declare(strict_types=1);
 
 namespace Magebit\McpCatalogTools\Test\Unit\Model\Media;
 
-use Magebit\McpCatalogTools\Model\Media\ImagePayloadFactory;
+use Magebit\McpCatalogTools\Model\Media\ImagePayloadDecoder;
 use Magento\Framework\Api\Data\ImageContentInterface;
 use Magento\Framework\Api\Data\ImageContentInterfaceFactory;
 use Magento\Framework\Api\ImageContentValidator;
 use Magento\Framework\Exception\LocalizedException;
 use PHPUnit\Framework\TestCase;
 
-class ImagePayloadFactoryTest extends TestCase
+class ImagePayloadDecoderTest extends TestCase
 {
     /** 1x1 transparent PNG. */
     private const PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42m'
@@ -110,7 +110,7 @@ class ImagePayloadFactoryTest extends TestCase
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('the limit is');
 
-        $this->capture(base64_encode(str_repeat('A', ImagePayloadFactory::MAX_IMAGE_BYTES + 1)), 'big.png');
+        $this->capture(base64_encode(str_repeat('A', ImagePayloadDecoder::MAX_IMAGE_BYTES + 1)), 'big.png');
     }
 
     /**
@@ -164,7 +164,7 @@ class ImagePayloadFactoryTest extends TestCase
         $contentFactory = $this->createMock(ImageContentInterfaceFactory::class);
         $contentFactory->method('create')->willReturn($content);
 
-        (new ImagePayloadFactory($contentFactory, new ImageContentValidator()))->create($payload, $filename);
+        (new ImagePayloadDecoder($contentFactory, new ImageContentValidator()))->create($payload, $filename);
 
         /** @var array<string, string> $captured */
         return $captured;

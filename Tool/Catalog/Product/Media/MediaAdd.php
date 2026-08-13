@@ -19,7 +19,7 @@ use Magebit\Mcp\Model\Tool\Schema\Schema;
 use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
 use Magebit\McpCatalogTools\Model\EntityFinder;
-use Magebit\McpCatalogTools\Model\Media\ImagePayloadFactory;
+use Magebit\McpCatalogTools\Model\Media\ImagePayloadDecoder;
 use Magebit\McpCatalogTools\Model\Media\MediaGalleryEntryBuilder;
 use Magento\Catalog\Api\ProductAttributeMediaGalleryManagementInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -35,13 +35,13 @@ class MediaAdd implements ToolInterface, UnderlyingAclAwareInterface
 
     /**
      * @param EntityFinder $entityFinder
-     * @param ImagePayloadFactory $imagePayloadFactory
+     * @param ImagePayloadDecoder $imagePayloadDecoder
      * @param MediaGalleryEntryBuilder $entryBuilder
      * @param ProductAttributeMediaGalleryManagementInterface $galleryManagement
      */
     public function __construct(
         private readonly EntityFinder $entityFinder,
-        private readonly ImagePayloadFactory $imagePayloadFactory,
+        private readonly ImagePayloadDecoder $imagePayloadDecoder,
         private readonly MediaGalleryEntryBuilder $entryBuilder,
         private readonly ProductAttributeMediaGalleryManagementInterface $galleryManagement
     ) {
@@ -100,7 +100,7 @@ class MediaAdd implements ToolInterface, UnderlyingAclAwareInterface
                     . 'The accept list is the stock Magento set; this store may allow more.',
                 'x-mcp-file' => [
                     'accept' => ['image/jpeg', 'image/png', 'image/gif'],
-                    'maxSize' => ImagePayloadFactory::MAX_IMAGE_BYTES,
+                    'maxSize' => ImagePayloadDecoder::MAX_IMAGE_BYTES,
                 ],
             ], true)
             ->string('filename', fn (StringBuilder $s) => $s
@@ -171,7 +171,7 @@ class MediaAdd implements ToolInterface, UnderlyingAclAwareInterface
             ? $arguments['filename']
             : null;
 
-        $content = $this->imagePayloadFactory->create($payload, $filename);
+        $content = $this->imagePayloadDecoder->create($payload, $filename);
         $entry = $this->entryBuilder->build($arguments);
         $entry->setContent($content);
 

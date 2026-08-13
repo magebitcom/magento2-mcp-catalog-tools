@@ -25,7 +25,7 @@ use Magento\Framework\Exception\LocalizedException;
  * same service the gallery save runs afterwards, so a store that widens the
  * allowlist through di.xml widens this tool with it.
  */
-class ImagePayloadFactory
+class ImagePayloadDecoder
 {
     public const MAX_IMAGE_BYTES = 8388608;
 
