@@ -99,8 +99,13 @@ class ProductUpdate implements ToolInterface, UnderlyingAclAwareInterface
             ->string('new_sku', fn (StringBuilder $s) => $s->minLength(1))
             ->string('name', fn (StringBuilder $s) => $s->minLength(1))
             ->number('price', fn (NumberBuilder $n) => $n)
-            ->integer('status', fn (IntegerBuilder $i) => $i->enum([1, 2]))
-            ->integer('visibility', fn (IntegerBuilder $i) => $i->enum([1, 2, 3, 4]))
+            ->integer('status', fn (IntegerBuilder $i) => $i
+                ->enum([1, 2])
+                ->description('1 = enabled, 2 = disabled.'))
+            ->integer('visibility', fn (IntegerBuilder $i) => $i
+                ->enum([1, 2, 3, 4])
+                ->description('1 = not visible individually, 2 = catalog, 3 = search, '
+                    . '4 = catalog and search.'))
             ->number('weight', fn (NumberBuilder $n) => $n)
             ->string('url_key', fn (StringBuilder $s) => $s)
             ->integer('tax_class_id', fn (IntegerBuilder $i) => $i->minimum(0))
