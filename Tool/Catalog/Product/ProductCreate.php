@@ -89,8 +89,15 @@ class ProductCreate implements ToolInterface, UnderlyingAclAwareInterface
             ->number('price', fn (NumberBuilder $n) => $n->required())
             ->integer('attribute_set_id', fn (IntegerBuilder $i) => $i->minimum(1)->required())
             ->string('type_id', fn (StringBuilder $s) => $s->minLength(1)->required())
-            ->integer('status', fn (IntegerBuilder $i) => $i->enum([1, 2])->required())
-            ->integer('visibility', fn (IntegerBuilder $i) => $i->enum([1, 2, 3, 4])->required())
+            ->integer('status', fn (IntegerBuilder $i) => $i
+                ->enum([1, 2])
+                ->description('1 = enabled, 2 = disabled.')
+                ->required())
+            ->integer('visibility', fn (IntegerBuilder $i) => $i
+                ->enum([1, 2, 3, 4])
+                ->description('1 = not visible individually, 2 = catalog, 3 = search, '
+                    . '4 = catalog and search.')
+                ->required())
             ->number('weight', fn (NumberBuilder $n) => $n)
             ->number('qty', fn (NumberBuilder $n) => $n
                 ->description('Initial quantity on hand. Omit to leave stock untouched.'))
