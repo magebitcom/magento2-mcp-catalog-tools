@@ -9,6 +9,8 @@ declare(strict_types=1);
 namespace Magebit\McpCatalogTools\Test\Unit\Model;
 
 use Magebit\McpCatalogTools\Model\StoreScope;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -70,6 +72,25 @@ class StoreScopeTest extends TestCase
         $this->storeManager->expects($this->never())->method('setCurrentStore');
 
         $this->assertSame('done', $this->scope->run(0, fn (): string => 'done'));
+    }
+
+    public function testUnknownStoreIdIsRefusedBeforeSwitching(): void
+    {
+        $current = $this->createMock(StoreInterface::class);
+        $current->method('getId')->willReturn(1);
+        $this->storeManager->method('getStore')
+            ->willReturnCallback(function ($storeId = null) use ($current): StoreInterface {
+                if ($storeId === null) {
+                    return $current;
+                }
+                throw new NoSuchEntityException(__('not found'));
+            });
+        $this->storeManager->expects($this->never())->method('setCurrentStore');
+
+        $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('store_id 4 is not a known store view.');
+
+        $this->scope->run(4, fn (): string => 'never');
     }
 
     /**
