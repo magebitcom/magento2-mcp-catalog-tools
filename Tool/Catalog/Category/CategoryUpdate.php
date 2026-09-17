@@ -23,7 +23,9 @@ use Magebit\McpCatalogTools\Model\StoreScope;
 use Magento\Catalog\Api\CategoryManagementInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * MCP write tool `catalog.category.update` (PATCH-style). Tree moves route
@@ -42,6 +44,7 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
      * @param CategoryFieldApplier $fieldApplier
      * @param StoreScope $storeScope
      * @param PreserveInheritedValues $preserveInheritedValues
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         private readonly EntityFinder $entityFinder,
@@ -49,7 +52,8 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         private readonly CategoryManagementInterface $categoryManagement,
         private readonly CategoryFieldApplier $fieldApplier,
         private readonly StoreScope $storeScope,
-        private readonly PreserveInheritedValues $preserveInheritedValues
+        private readonly PreserveInheritedValues $preserveInheritedValues,
+        private readonly StoreManagerInterface $storeManager
     ) {
     }
 
@@ -163,6 +167,9 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
     public function execute(array $arguments): ToolResultInterface
     {
         $storeId = $this->entityFinder->storeIdFrom($arguments, Store::DEFAULT_STORE_ID);
+        if ($storeId !== Store::DEFAULT_STORE_ID) {
+            $this->assertStoreCoversTree($arguments, $storeId);
+        }
 
         // `CategoryRepository::save()` derives the write scope from the store
         // manager's current store — not from the model — so the whole mutation
@@ -240,6 +247,58 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
                 'fields_changed' => $changed,
             ]
         );
+    }
+
+    /**
+     * Store groups hang off different root categories, and a store-view override
+     * on a category outside the store's root is invisible there while still
+     * leaving an attribute row and a URL rewrite behind. When the same call moves
+     * the category the destination parent decides the tree, because the move
+     * runs before the save. Unknown stores and categories are left to the
+     * stages that already report them.
+     *
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     * @param int $storeId
+     * @return void
+     * @throws LocalizedException
+     */
+    private function assertStoreCoversTree(array $arguments, int $storeId): void
+    {
+        $categoryId = is_numeric($arguments['id'] ?? null) ? (int) $arguments['id'] : 0;
+        if ($categoryId <= 0) {
+            return;
+        }
+        $treeOf = is_numeric($arguments['parent_id'] ?? null) ? (int) $arguments['parent_id'] : $categoryId;
+
+        try {
+            $store = $this->storeManager->getStore($storeId);
+            $path = (string) $this->categoryRepository->get($treeOf)->getPath();
+        } catch (NoSuchEntityException) {
+            return;
+        }
+        if (!$store instanceof Store) {
+            throw new LocalizedException(__('Could not resolve the root category of store_id %1.', $storeId));
+        }
+        $rootId = (int) $store->getRootCategoryId();
+
+        if (in_array($rootId, array_map('intval', explode('/', $path)), true)) {
+            return;
+        }
+        throw new LocalizedException($treeOf === $categoryId
+            ? __(
+                'store_id %1 is under root category %2, which does not contain category %3.',
+                $storeId,
+                $rootId,
+                $categoryId
+            )
+            : __(
+                'store_id %1 is under root category %2, which does not contain destination parent %3 of category %4.',
+                $storeId,
+                $rootId,
+                $treeOf,
+                $categoryId
+            ));
     }
 
     /**
