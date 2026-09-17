@@ -17,6 +17,7 @@ use Magebit\Mcp\Model\Tool\Schema\Builder\StringBuilder;
 use Magebit\Mcp\Model\Tool\Schema\Schema;
 use Magebit\Mcp\Model\Tool\ToolResult;
 use Magebit\Mcp\Model\Tool\WriteMode;
+use Magebit\McpCatalogTools\Model\Category\PreserveInheritedValues;
 use Magebit\McpCatalogTools\Model\EntityFinder;
 use Magebit\McpCatalogTools\Model\StoreScope;
 use Magento\Catalog\Api\CategoryManagementInterface;
@@ -40,13 +41,15 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
      * @param CategoryManagementInterface $categoryManagement
      * @param CategoryFieldApplier $fieldApplier
      * @param StoreScope $storeScope
+     * @param PreserveInheritedValues $preserveInheritedValues
      */
     public function __construct(
         private readonly EntityFinder $entityFinder,
         private readonly CategoryRepositoryInterface $categoryRepository,
         private readonly CategoryManagementInterface $categoryManagement,
         private readonly CategoryFieldApplier $fieldApplier,
-        private readonly StoreScope $storeScope
+        private readonly StoreScope $storeScope,
+        private readonly PreserveInheritedValues $preserveInheritedValues
     ) {
     }
 
@@ -207,6 +210,7 @@ class CategoryUpdate implements ToolInterface, UnderlyingAclAwareInterface
         $category = $this->entityFinder->categoryFrom($arguments, $storeId);
 
         $this->fieldApplier->applyOptional($category, $patch);
+        $this->preserveInheritedValues->apply($category, $patch);
 
         $saved = $this->categoryRepository->save($category);
 

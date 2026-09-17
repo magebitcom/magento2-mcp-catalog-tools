@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Magebit\McpCatalogTools\Test\Unit\Tool\Catalog\Category;
 
+use Magebit\McpCatalogTools\Model\Category\PreserveInheritedValues;
 use Magebit\McpCatalogTools\Model\EntityFinder;
 use Magebit\McpCatalogTools\Model\StoreScope;
 use Magebit\McpCatalogTools\Tool\Catalog\Category\CategoryFieldApplier;
@@ -34,6 +35,9 @@ class CategoryUpdateTest extends TestCase
 
     /** @var StoreManagerInterface&MockObject */
     private StoreManagerInterface $storeManager;
+
+    /** @var PreserveInheritedValues&MockObject */
+    private PreserveInheritedValues $preserveInheritedValues;
 
     private CategoryUpdate $tool;
 
@@ -62,6 +66,7 @@ class CategoryUpdateTest extends TestCase
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $this->categoryManagement = $this->createMock(CategoryManagementInterface::class);
         $this->storeManager = $this->createMock(StoreManagerInterface::class);
+        $this->preserveInheritedValues = $this->createMock(PreserveInheritedValues::class);
 
         $this->emulateRepositoryCache();
         $this->recordMoves();
@@ -84,7 +89,8 @@ class CategoryUpdateTest extends TestCase
             $this->categoryRepository,
             $this->categoryManagement,
             $this->createMock(CategoryFieldApplier::class),
-            new StoreScope($this->storeManager)
+            new StoreScope($this->storeManager),
+            $this->preserveInheritedValues
         );
     }
 
@@ -110,6 +116,23 @@ class CategoryUpdateTest extends TestCase
         $this->tool->execute(['id' => 5, 'store_id' => 3, 'meta_title' => 'Store title']);
 
         $this->assertSame(['switch:3', 'get:3', 'save', 'switch:1'], $this->calls);
+    }
+
+    /**
+     * The inherited-value reset must see the patch as applied, i.e. without
+     * the identity and routing keys, and must run on the scoped instance that
+     * is about to be saved.
+     */
+    public function testInheritedValuesAreResetOnTheSavedInstanceWithThePatch(): void
+    {
+        $this->preserveInheritedValues->expects($this->once())
+            ->method('apply')
+            ->with(
+                $this->callback(fn (CategoryInterface $c): bool => $c === $this->repositoryCache[3]),
+                ['meta_title' => 'Store title']
+            );
+
+        $this->tool->execute(['id' => 5, 'store_id' => 3, 'meta_title' => 'Store title']);
     }
 
     /**
