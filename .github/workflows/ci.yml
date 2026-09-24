@@ -30,7 +30,7 @@ jobs:
           composer-auth-pass: ${{ secrets.MAGENTO_AUTH_PASS }}
           extra-packages: >-
             phpstan/phpstan:^2.0
-            bitexpert/phpstan-magento:^0.42
+            bitexpert/phpstan-magento:^0.44
             phpstan/extension-installer:^1.4
             phpunit/phpunit:^9.5
 
@@ -61,7 +61,7 @@ jobs:
           composer-auth-pass: ${{ secrets.MAGENTO_AUTH_PASS }}
           extra-packages: >-
             phpstan/phpstan:^2.0
-            bitexpert/phpstan-magento:^0.42
+            bitexpert/phpstan-magento:^0.44
             phpstan/extension-installer:^1.4
             phpunit/phpunit:^9.5
 
