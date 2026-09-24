@@ -133,6 +133,17 @@ wouldn't be allowed to perform the same action in the admin UI.
 
 ## Upgrade notes
 
+- **Store-scoped `catalog.category.update` writes only the patch.** A save at
+  a store view used to pin every store-scoped attribute of the category as an
+  override row, not only the fields in the call, which removed "Use Default
+  Value" from all of them in the admin. Only the patched attributes are now
+  written; attributes already overridden at that store view are kept.
+  Override rows created by earlier versions are not repaired automatically.
+  Two related refusals: a `store_id` no store view carries fails with
+  `store_id N is not a known store view.` instead of exhausting memory, and a
+  `store_id` whose root category does not contain the category (or the
+  destination `parent_id` when the call also moves it) fails instead of leaving
+  an override row and a URL rewrite where the category is never shown.
 - **Global-scope writes by default.** `catalog.product.create` /
   `catalog.product.update` and `catalog.category.create` /
   `catalog.category.update` now save attribute values at global/default
