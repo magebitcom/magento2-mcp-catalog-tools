@@ -52,9 +52,9 @@ class CatalogProductDeleteTest extends McpTestCase
         self::assertSame('simple', $payload['sku'] ?? null);
         self::assertGreaterThan(0, (int) ($payload['entity_id'] ?? 0));
 
-        // The product is actually gone — repository::get throws.
+        // The product is actually gone — a fresh repository (no cached copy) throws.
         /** @var ProductRepositoryInterface $repo */
-        $repo = Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class);
+        $repo = Bootstrap::getObjectManager()->create(ProductRepositoryInterface::class);
         $this->expectException(NoSuchEntityException::class);
         $repo->get('simple');
     }

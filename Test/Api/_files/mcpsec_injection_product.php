@@ -35,4 +35,6 @@ $product->setTypeId(Type::TYPE_SIMPLE)
     ->setVisibility(Visibility::VISIBILITY_BOTH)
     ->setStatus(Status::STATUS_ENABLED)
     ->setStockData(['use_config_manage_stock' => 1, 'qty' => 0, 'is_in_stock' => 0]);
-$om->get(ProductRepositoryInterface::class)->save($product);
+/** @var ProductRepositoryInterface $repository */
+$repository = $om->get(ProductRepositoryInterface::class);
+$repository->save($product);

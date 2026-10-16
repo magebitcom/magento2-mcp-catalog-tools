@@ -50,9 +50,9 @@ class CatalogCategoryDeleteTest extends McpTestCase
         self::assertTrue($payload['deleted'] ?? false);
         self::assertSame(333, (int) ($payload['entity_id'] ?? 0));
 
-        // The category is actually gone — repository::get throws.
+        // The category is actually gone — a fresh repository (no cached copy) throws.
         /** @var CategoryRepositoryInterface $repo */
-        $repo = Bootstrap::getObjectManager()->get(CategoryRepositoryInterface::class);
+        $repo = Bootstrap::getObjectManager()->create(CategoryRepositoryInterface::class);
         $this->expectException(NoSuchEntityException::class);
         $repo->get(333);
     }
