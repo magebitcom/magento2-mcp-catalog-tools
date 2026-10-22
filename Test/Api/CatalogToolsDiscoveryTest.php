@@ -53,7 +53,9 @@ class CatalogToolsDiscoveryTest extends McpTestCase
         $names = array_column($tools, 'name');
 
         foreach (self::READ_TOOLS as $expected) {
-            self::assertContains($expected, $names, sprintf('tools/list missing %s.', $expected));
+            // tools/list uses underscores on the wire, e.g. catalog_product_list.
+            $wireName = str_replace('.', '_', $expected);
+            self::assertContains($wireName, $names, sprintf('tools/list missing %s.', $expected));
         }
     }
 
@@ -78,7 +80,9 @@ class CatalogToolsDiscoveryTest extends McpTestCase
         $names = array_column($tools, 'name');
 
         foreach (self::WRITE_TOOLS as $expected) {
-            self::assertContains($expected, $names, sprintf('tools/list missing %s.', $expected));
+            // tools/list uses underscores on the wire, e.g. catalog_product_list.
+            $wireName = str_replace('.', '_', $expected);
+            self::assertContains($wireName, $names, sprintf('tools/list missing %s.', $expected));
         }
     }
 }
