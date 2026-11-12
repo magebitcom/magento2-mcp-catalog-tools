@@ -69,7 +69,7 @@ class CategoryList implements ToolInterface
     {
         return 'Search catalog categories with optional filters (name, '
             . 'is_active, include_in_menu, parent_id, level range). Each row '
-            . 'is the same shape as `catalog.category.get`; use '
+            . 'is the same shape as `catalog_category_get`; use '
             . '`fields`/`exclude` to narrow.';
     }
 

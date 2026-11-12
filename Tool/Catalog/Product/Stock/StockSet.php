@@ -41,7 +41,7 @@ class StockSet implements ToolInterface, UnderlyingAclAwareInterface
 
     private const MULTI_SOURCE_WARNING = 'This store uses multiple inventory sources; '
         . 'the write was applied to the default source only. Use '
-        . '`inventory.source_item.set` to target a specific source.';
+        . '`inventory_source_item_set` to target a specific source.';
 
     /**
      * @param StockRegistryInterface $stockRegistry
@@ -77,7 +77,7 @@ class StockSet implements ToolInterface, UnderlyingAclAwareInterface
         return 'Set stock levels and stock settings for one or more products, '
             . 'by SKU. INTENDED FOR STORES WITH MULTI-SOURCE INVENTORY (MSI) '
             . 'DISABLED — it writes Magento\'s legacy single-stock tables. If MSI '
-            . 'is enabled, prefer `inventory.source_item.set`, which addresses a '
+            . 'is enabled, prefer `inventory_source_item_set`, which addresses a '
             . 'specific source; a legacy write on a multi-source store silently '
             . 'resolves to the default source only, and each result row will say '
             . 'so. Only the fields you pass on each item are changed. Processes up '

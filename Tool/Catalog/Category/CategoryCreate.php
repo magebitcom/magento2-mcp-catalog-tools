@@ -69,7 +69,7 @@ class CategoryCreate implements ToolInterface, UnderlyingAclAwareInterface
     public function getDescription(): string
     {
         return 'Create a new catalog category. Required: `name` and '
-            . '`parent_id`. Use `catalog.category.list` with '
+            . '`parent_id`. Use `catalog_category_list` with '
             . '`filters: {level_to: 1}` to discover root category ids first. '
             . 'Values are stored at global/default scope.';
     }

@@ -70,7 +70,7 @@ class ProductList implements ToolInterface
             . 'status, visibility, type_id, attribute_set_id, price range, '
             . 'qty range, category_id, website_id, created_at range, '
             . 'updated_at range, has_special_price) and paging. Each row is the same shape as '
-            . '`catalog.product.get`; use `fields`/`exclude` to narrow.';
+            . '`catalog_product_get`; use `fields`/`exclude` to narrow.';
     }
 
     /**
