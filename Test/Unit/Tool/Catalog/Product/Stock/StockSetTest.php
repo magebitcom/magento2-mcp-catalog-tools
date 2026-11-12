@@ -121,7 +121,7 @@ class StockSetTest extends TestCase
         $this->assertArrayHasKey('warning', $row);
         $warning = $row['warning'];
         $this->assertIsString($warning);
-        $this->assertStringContainsString('inventory.source_item.set', $warning);
+        $this->assertStringContainsString('inventory_source_item_set', $warning);
     }
 
     /**

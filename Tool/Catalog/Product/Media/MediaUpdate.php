@@ -69,8 +69,8 @@ class MediaUpdate implements ToolInterface, UnderlyingAclAwareInterface
         return 'Update the metadata of an existing gallery image — label, '
             . 'position, disabled flag, and role assignments. Identify the '
             . 'product by `id` or `sku` and the image by `entry_id` (returned by '
-            . '`catalog.product.media.add`, and listed in the `media_gallery` '
-            . 'slice of `catalog.product.get`). Only the fields you pass are '
+            . '`catalog_product_media_add`, and listed in the `media_gallery` '
+            . 'slice of `catalog_product_get`). Only the fields you pass are '
             . 'changed. Replacing the image file itself is not supported — '
             . 'remove the entry and add a new one.';
     }
